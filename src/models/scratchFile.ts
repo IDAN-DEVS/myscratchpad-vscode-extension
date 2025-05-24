@@ -33,21 +33,74 @@ export const fileTypeLabels: Record<FileTypeEnum, string> = {
 export const getFileTypeIcon = (extension: string): string => {
   switch (extension) {
     case FileTypeEnum.JavaScript:
-      return "js";
+      return "symbol-method";
     case FileTypeEnum.TypeScript:
-      return "typescript";
+      return "symbol-interface";
     case FileTypeEnum.HTML:
-      return "html";
+      return "browser";
     case FileTypeEnum.CSS:
-      return "css";
+      return "symbol-color";
     case FileTypeEnum.JSON:
-      return "json";
+      return "symbol-object";
     case FileTypeEnum.Markdown:
       return "markdown";
     case FileTypeEnum.SQL:
       return "database";
     case FileTypeEnum.Text:
+      return "file-text";
     default:
-      return "file";
+      // For custom extensions, return extension-specific icons where available
+      return getCustomFileIcon(extension);
   }
+};
+
+export const getCustomFileIcon = (extension: string): string => {
+  const iconMap: { [key: string]: string } = {
+    py: "symbol-method",
+    rb: "ruby",
+    go: "go",
+    java: "coffee",
+    c: "symbol-method",
+    cpp: "symbol-method",
+    cs: "symbol-class",
+    php: "symbol-method",
+    swift: "symbol-method",
+    kt: "symbol-class",
+    rs: "symbol-method",
+    dart: "symbol-method",
+    lua: "symbol-method",
+    r: "graph",
+    sh: "terminal",
+    bash: "terminal",
+    ps1: "terminal",
+    bat: "terminal",
+    yaml: "symbol-object",
+    yml: "symbol-object",
+    toml: "symbol-object",
+    ini: "gear",
+    cfg: "gear",
+    xml: "symbol-object",
+    vue: "symbol-color",
+    svelte: "symbol-color",
+    jsx: "symbol-method",
+    tsx: "symbol-interface",
+    scss: "symbol-color",
+    sass: "symbol-color",
+    less: "symbol-color",
+    styl: "symbol-color",
+    coffee: "coffee",
+    elm: "symbol-method",
+    hs: "symbol-method",
+    clj: "symbol-method",
+    ex: "symbol-method",
+    erl: "symbol-method",
+    vim: "gear",
+    dockerfile: "package",
+    tf: "symbol-object",
+    hcl: "symbol-object",
+    cody: "robot",
+    ["*"]: "file-code",
+  };
+
+  return iconMap[extension.toLowerCase()] || "file-code";
 };
