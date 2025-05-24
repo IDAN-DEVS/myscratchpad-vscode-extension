@@ -1,0 +1,98 @@
+{
+  "name": "myscratchpad",
+  "displayName": "MyScratchPad",
+  "description": "A simple scratchpad that lives in your IDE",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "icon": "",
+          "id": "scratchpadExplorer",
+          "name": "Scratchpad"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "myscratchpad.createScratchFile",
+        "title": "Create New Scratch File",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.deleteScratchFile",
+        "title": "Delete Scratch File",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "myscratchpad.renameScratchFile",
+        "title": "Rename Scratch File",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "myscratchpad.refreshScratchpad",
+        "title": "Refresh Scratchpad",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "myscratchpad.createScratchFile",
+          "when": "view == scratchpadExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.refreshScratchpad",
+          "when": "view == scratchpadExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "myscratchpad.deleteScratchFile",
+          "when": "view == scratchpadExplorer",
+          "group": "inline"
+        },
+        {
+          "command": "myscratchpad.renameScratchFile",
+          "when": "view == scratchpadExplorer",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.100.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "ts-loader": "^9.5.2",
+    "webpack": "^5.99.7",
+    "webpack-cli": "^6.0.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
