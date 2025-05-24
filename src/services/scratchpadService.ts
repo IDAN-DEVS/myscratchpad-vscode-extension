@@ -129,10 +129,10 @@ export class ScratchpadService {
     }
   }
 
-  private async askForFileType(): Promise<FileTypeEnum | undefined> {
+  private async askForFileType(): Promise<FileTypeEnum | string | undefined> {
     const items = Object.entries(fileTypeLabels).map(([ext, label]) => ({
       label,
-      description: `.${ext}`,
+      description: ext === 'custom' ? 'Enter your own extension' : `.${ext}`,
       extension: ext as FileTypeEnum,
     }));
 
@@ -140,10 +140,30 @@ export class ScratchpadService {
       placeHolder: "Select a file type for your scratch file",
     });
 
+    if (selected?.extension === FileTypeEnum.Custom) {
+      const customExtension = await vscode.window.showInputBox({
+        prompt: "Enter the file extension (without the dot)",
+        placeHolder: "e.g., py, go, rb, java",
+        validateInput: (value) => {
+          if (!value) {
+            return "Extension cannot be empty";
+          }
+          if (value.includes('.') || value.includes('/') || value.includes('\\')) {
+            return "Extension should not contain dots or slashes";
+          }
+          if (!/^[a-zA-Z0-9]+$/.test(value)) {
+            return "Extension should only contain letters and numbers";
+          }
+          return null;
+        },
+      });
+      return customExtension;
+    }
+
     return selected?.extension;
   }
 
-  private generateDefaultName(fileType: FileTypeEnum): string {
+  private generateDefaultName(fileType: FileTypeEnum | string): string {
     const timestamp = new Date()
       .toISOString()
       .replace(/[-:]/g, "")
@@ -153,7 +173,7 @@ export class ScratchpadService {
     return `${prefix}${timestamp}`;
   }
 
-  private getFileTypePrefix(fileType: FileTypeEnum): string {
+  private getFileTypePrefix(fileType: FileTypeEnum | string): string {
     switch (fileType) {
       case FileTypeEnum.JavaScript:
         return "js_";
@@ -170,11 +190,15 @@ export class ScratchpadService {
       case FileTypeEnum.SQL:
         return "sql_";
       default:
+        // For custom extensions, use the extension as prefix
+        if (typeof fileType === 'string') {
+          return `${fileType}_`;
+        }
         return "scratch_";
     }
   }
 
-  private getInitialContent(fileType: FileTypeEnum): string {
+  private getInitialContent(fileType: FileTypeEnum | string): string {
     const dateComment = `// Created on ${new Date().toLocaleString()}`;
 
     switch (fileType) {
@@ -200,7 +224,54 @@ export class ScratchpadService {
         return `-- Created on ${new Date().toLocaleString()}\n\n-- SQL Scratch File\nSELECT *\nFROM users\nWHERE active = true\nORDER BY created_at DESC\nLIMIT 10;\n`;
 
       default:
+        // For custom file types, provide a generic template with appropriate comment style
+        if (typeof fileType === 'string') {
+          const commentChar = this.getCommentCharForExtension(fileType);
+          return `${commentChar} Created on ${new Date().toLocaleString()}\n\n${commentChar} ${fileType.toUpperCase()} Scratch File\n\n`;
+        }
         return `Created on ${new Date().toLocaleString()}\n\nScratch file for notes and temporary content.\n`;
     }
+  }
+
+  private getCommentCharForExtension(extension: string): string {
+    // Common comment patterns for different file types
+    const commentMap: { [key: string]: string } = {
+      py: '#',
+      rb: '#',
+      sh: '#',
+      bash: '#',
+      r: '#',
+      pl: '#',
+      php: '//',
+      go: '//',
+      java: '//',
+      c: '//',
+      cpp: '//',
+      cs: '//',
+      swift: '//',
+      kt: '//',
+      scala: '//',
+      rust: '//',
+      rs: '//',
+      dart: '//',
+      lua: '--',
+      hs: '--',
+      elm: '--',
+      ex: '#',
+      exs: '#',
+      erl: '%',
+      clj: ';',
+      lisp: ';',
+      vim: '"',
+      ini: ';',
+      cfg: '#',
+      yaml: '#',
+      yml: '#',
+      toml: '#',
+      bat: 'REM',
+      ps1: '#',
+    };
+
+    return commentMap[extension.toLowerCase()] || '//';
   }
 }

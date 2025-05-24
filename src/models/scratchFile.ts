@@ -15,6 +15,7 @@ export enum FileTypeEnum {
   Markdown = "md",
   Text = "txt",
   SQL = "sql",
+  Custom = "custom",
 }
 
 export const fileTypeLabels: Record<FileTypeEnum, string> = {
@@ -26,6 +27,7 @@ export const fileTypeLabels: Record<FileTypeEnum, string> = {
   [FileTypeEnum.Markdown]: "Markdown",
   [FileTypeEnum.Text]: "Plain Text",
   [FileTypeEnum.SQL]: "SQL",
+  [FileTypeEnum.Custom]: "Custom File",
 };
 
 export const getFileTypeIcon = (extension: string): string => {
