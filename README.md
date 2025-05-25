@@ -2,6 +2,9 @@
 
 A powerful scratchpad extension for Visual Studio Code that provides both global and workspace-specific scratch files. Create, manage, and organize temporary files with support for multiple file types and custom extensions.
 
+<br/>
+<video src="https://pub-db4f9d2ca78f4d78a89b8e54dca08c9f.r2.dev/installation%20and%20usage%20myscratchpad%20demo%20v1.mp4" autoplay loop muted playsinline></video>
+
 ## Features
 
 ### 🌍 Dual Scratchpad System
@@ -36,9 +39,6 @@ You'll find **two scratchpad views** in the Explorer sidebar:
 
 - **Scratchpad**: For global files (available across all projects)
 - **Workspace Scratchpad**: For project-specific files
-
-<br/>
-<img src="./assets/explorer-view.png">
 
 ### ✨ Creating Files
 
