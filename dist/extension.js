@@ -50,40 +50,95 @@ const scratchpadService_1 = __webpack_require__(6);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
-    console.log('Congratulations, your extension "myscratchpad" is now active!');
-    // Create the scratchpad directory in the global storage path
-    const scratchpadDir = path.join(context.globalStorageUri.fsPath, "scratchFiles");
-    // Initialize the provider and service
-    const scratchpadProvider = new scratchpadProvider_1.ScratchpadProvider(scratchpadDir);
-    const scratchpadService = new scratchpadService_1.ScratchpadService(scratchpadDir);
-    // Register the tree data provider
-    const treeView = vscode.window.createTreeView("scratchpadExplorer", {
-        treeDataProvider: scratchpadProvider,
+    console.log('Congratulations, your extension "MyScratchPad" is now active!');
+    // Create the global scratchpad directory
+    const globalScratchpadDir = path.join(context.globalStorageUri.fsPath, "scratchFiles");
+    // Get workspace folder name for unique directory naming
+    let workspaceFolderPath = vscode.workspace.workspaceFolders
+        ? path.basename(vscode.workspace.workspaceFolders[0].uri.fsPath)
+        : "default";
+    console.log("workspaceFolderPath", workspaceFolderPath);
+    // Create workspace-specific scratchpad directory
+    const workspaceScratchpadDir = vscode.workspace.workspaceFolders
+        ? path.join(context.globalStorageUri.fsPath, "workspaceScratchFiles", workspaceFolderPath)
+        : path.join(context.globalStorageUri.fsPath, "workspaceScratchFiles");
+    // Initialize providers and services for both views
+    const globalScratchpadProvider = new scratchpadProvider_1.ScratchpadProvider(globalScratchpadDir, "global");
+    const globalScratchpadService = new scratchpadService_1.ScratchpadService(globalScratchpadDir, "global");
+    const workspaceScratchpadProvider = new scratchpadProvider_1.ScratchpadProvider(workspaceScratchpadDir, "workspace");
+    const workspaceScratchpadService = new scratchpadService_1.ScratchpadService(workspaceScratchpadDir, "workspace");
+    // Register tree data providers
+    const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
+        treeDataProvider: globalScratchpadProvider,
         showCollapseAll: false,
     });
+    const workspaceTreeView = vscode.window.createTreeView("workspaceScratchpadExplorer", {
+        treeDataProvider: workspaceScratchpadProvider,
+        showCollapseAll: false,
+    });
+    // Helper function to determine which service/provider to use based on view context
+    const getServiceAndProvider = (viewId) => {
+        if (viewId === "workspaceScratchpadExplorer") {
+            return {
+                service: workspaceScratchpadService,
+                provider: workspaceScratchpadProvider,
+            };
+        }
+        return {
+            service: globalScratchpadService,
+            provider: globalScratchpadProvider,
+        };
+    };
     // Register commands
     context.subscriptions.push(vscode.commands.registerCommand("myscratchpad.createScratchFile", async () => {
-        await scratchpadService.createScratchFile();
-        scratchpadProvider.refresh();
+        await globalScratchpadService.createScratchFile();
+        globalScratchpadProvider.refresh();
+    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFile", async () => {
+        await workspaceScratchpadService.createScratchFile();
+        workspaceScratchpadProvider.refresh();
     }), vscode.commands.registerCommand("myscratchpad.deleteScratchFile", async (item) => {
         const treeItem = item;
         if (treeItem?.scratchFile) {
-            const success = await scratchpadService.deleteScratchFile(treeItem.scratchFile);
+            // Determine which service to use based on file path
+            const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
+            const { service, provider } = isWorkspaceFile
+                ? {
+                    service: workspaceScratchpadService,
+                    provider: workspaceScratchpadProvider,
+                }
+                : {
+                    service: globalScratchpadService,
+                    provider: globalScratchpadProvider,
+                };
+            const success = await service.deleteScratchFile(treeItem.scratchFile);
             if (success) {
-                scratchpadProvider.refresh();
+                provider.refresh();
             }
         }
     }), vscode.commands.registerCommand("myscratchpad.renameScratchFile", async (item) => {
         const treeItem = item;
         if (treeItem?.scratchFile) {
-            const success = await scratchpadService.renameScratchFile(treeItem.scratchFile);
+            // Determine which service to use based on file path
+            const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
+            const { service, provider } = isWorkspaceFile
+                ? {
+                    service: workspaceScratchpadService,
+                    provider: workspaceScratchpadProvider,
+                }
+                : {
+                    service: globalScratchpadService,
+                    provider: globalScratchpadProvider,
+                };
+            const success = await service.renameScratchFile(treeItem.scratchFile);
             if (success) {
-                scratchpadProvider.refresh();
+                provider.refresh();
             }
         }
     }), vscode.commands.registerCommand("myscratchpad.refreshScratchpad", () => {
-        scratchpadProvider.refresh();
-    }), treeView);
+        globalScratchpadProvider.refresh();
+    }), vscode.commands.registerCommand("myscratchpad.refreshWorkspaceScratchpad", () => {
+        workspaceScratchpadProvider.refresh();
+    }), globalTreeView, workspaceTreeView);
 }
 // This method is called when your extension is deactivated
 function deactivate() { }
@@ -173,10 +228,12 @@ class ScratchpadTreeItem extends vscode.TreeItem {
 exports.ScratchpadTreeItem = ScratchpadTreeItem;
 class ScratchpadProvider {
     scratchpadDir;
+    scope;
     _onDidChangeTreeData = new vscode.EventEmitter();
     onDidChangeTreeData = this._onDidChangeTreeData.event;
-    constructor(scratchpadDir) {
+    constructor(scratchpadDir, scope = "global") {
         this.scratchpadDir = scratchpadDir;
+        this.scope = scope;
         // Ensure the scratchpad directory exists
         if (!fs.existsSync(scratchpadDir)) {
             fs.mkdirSync(scratchpadDir, { recursive: true });
@@ -384,8 +441,10 @@ const path = __importStar(__webpack_require__(2));
 const scratchFile_1 = __webpack_require__(5);
 class ScratchpadService {
     scratchpadDir;
-    constructor(scratchpadDir) {
+    scope;
+    constructor(scratchpadDir, scope = "global") {
         this.scratchpadDir = scratchpadDir;
+        this.scope = scope;
         // Ensure the scratchpad directory exists
         if (!fs.existsSync(scratchpadDir)) {
             fs.mkdirSync(scratchpadDir, { recursive: true });

@@ -8,7 +8,7 @@ import {
 } from "../models/scratchFile";
 
 export class ScratchpadService {
-  constructor(private scratchpadDir: string) {
+  constructor(private scratchpadDir: string, public readonly scope: string = "global") {
     // Ensure the scratchpad directory exists
     if (!fs.existsSync(scratchpadDir)) {
       fs.mkdirSync(scratchpadDir, { recursive: true });

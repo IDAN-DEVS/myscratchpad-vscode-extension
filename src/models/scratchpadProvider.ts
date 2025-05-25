@@ -45,7 +45,7 @@ export class ScratchpadProvider
     ScratchpadTreeItem | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  constructor(private scratchpadDir: string) {
+  constructor(private scratchpadDir: string, public readonly scope: string = "global") {
     // Ensure the scratchpad directory exists
     if (!fs.existsSync(scratchpadDir)) {
       fs.mkdirSync(scratchpadDir, { recursive: true });

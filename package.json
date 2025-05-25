@@ -18,6 +18,11 @@
           "icon": "",
           "id": "scratchpadExplorer",
           "name": "Scratchpad"
+        },
+        {
+          "icon": "",
+          "id": "workspaceScratchpadExplorer",
+          "name": "Workspace Scratchpad"
         }
       ]
     },
@@ -25,6 +30,11 @@
       {
         "command": "myscratchpad.createScratchFile",
         "title": "Create New Scratch File",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.createWorkspaceScratchFile",
+        "title": "Create New Workspace Scratch File",
         "icon": "$(new-file)"
       },
       {
@@ -41,6 +51,11 @@
         "command": "myscratchpad.refreshScratchpad",
         "title": "Refresh Scratchpad",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "myscratchpad.refreshWorkspaceScratchpad",
+        "title": "Refresh Workspace Scratchpad",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -54,6 +69,16 @@
           "command": "myscratchpad.refreshScratchpad",
           "when": "view == scratchpadExplorer",
           "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFile",
+          "when": "view == workspaceScratchpadExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.refreshWorkspaceScratchpad",
+          "when": "view == workspaceScratchpadExplorer",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -65,6 +90,16 @@
         {
           "command": "myscratchpad.renameScratchFile",
           "when": "view == scratchpadExplorer",
+          "group": "inline"
+        },
+        {
+          "command": "myscratchpad.deleteScratchFile",
+          "when": "view == workspaceScratchpadExplorer",
+          "group": "inline"
+        },
+        {
+          "command": "myscratchpad.renameScratchFile",
+          "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
         }
       ]
