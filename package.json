@@ -3,6 +3,31 @@
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
   "version": "0.0.1",
+  "publisher": "6a3c70ce-fb32-6e1d-9404-ea8afe21671a",
+  "author": {
+    "name": "JC Coder"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension.git"
+  },
+  "homepage": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/blob/main/README.md",
+  "bugs": {
+    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/issues"
+  },
+  "keywords": [
+    "scratchpad",
+    "notes",
+    "scratch",
+    "notepad",
+    "editor"
+  ],
+  "icon": "logo-png.png",
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },

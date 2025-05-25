@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="0" y="0" width="128" height="128" rx="12" fill="#252526"/>
+  
+  <!-- Notepad base -->
+  <rect x="28" y="24" width="72" height="80" rx="6" fill="#2d2d30" stroke="#007acc" stroke-width="2"/>
+  
+  <!-- Lines representing text on notepad -->
+  <line x1="40" y1="44" x2="88" y2="44" stroke="#cccccc" stroke-width="2"/>
+  <line x1="40" y1="58" x2="82" y2="58" stroke="#cccccc" stroke-width="2"/>
+  <line x1="40" y1="72" x2="76" y2="72" stroke="#cccccc" stroke-width="2"/>
+  <line x1="40" y1="86" x2="88" y2="86" stroke="#007acc" stroke-width="3"/>
+  
+  <!-- Pencil -->
+  <g transform="translate(70, 30) rotate(45)">
+    <rect x="0" y="0" width="40" height="8" rx="1" fill="#e05f00"/>
+    <polygon points="0,0 0,8 -10,4" fill="#e05f00"/>
+    <rect x="30" y="0" width="10" height="8" fill="#723300"/>
+  </g>
+  
+  <!-- Shine effect -->
+  <rect x="28" y="24" width="72" height="6" rx="2" fill="rgba(255,255,255,0.1)"/>
+</svg>
