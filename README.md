@@ -5,21 +5,25 @@ A powerful scratchpad extension for Visual Studio Code that provides both global
 ## Features
 
 ### 🌍 Dual Scratchpad System
+
 - **Global Scratchpad**: Files that persist across all workspaces and projects
 - **Workspace Scratchpad**: Files that are specific to the current workspace/project
 
 ### 📁 File Type Support
+
 - **Predefined Types**: JavaScript, TypeScript, HTML, CSS, JSON, Markdown, SQL, Plain Text
 - **Custom Extensions**: Add any file extension (Python, Go, Java, Ruby, etc.) with smart comment detection
 - **Smart Icons**: Automatic file type detection with appropriate VS Code theme icons
 
 ### 🛠️ File Management
+
 - Create files with auto-generated timestamped names
 - Rename and delete files with intuitive context menus
 - Type-specific templates for quick starts
 - Refresh views to sync file listings
 
 ### 💾 Intelligent Storage
+
 - Global files stored in VS Code's global storage (persist across all projects)
 - Workspace files organized by workspace folder name
 - Cross-platform path handling for Windows, macOS, and Linux
@@ -29,12 +33,17 @@ A powerful scratchpad extension for Visual Studio Code that provides both global
 ### 📋 Accessing Scratchpads
 
 You'll find **two scratchpad views** in the Explorer sidebar:
+
 - **Scratchpad**: For global files (available across all projects)
 - **Workspace Scratchpad**: For project-specific files
+
+<br/>
+<img src="./assets/explorer-view.png">
 
 ### ✨ Creating Files
 
 1. **Choose Your Scratchpad**:
+
    - Use **Global Scratchpad** for notes, snippets, and files you want across all projects
    - Use **Workspace Scratchpad** for project-specific temporary files
 
@@ -49,12 +58,13 @@ You'll find **two scratchpad views** in the Explorer sidebar:
 
 - **Open**: Click any file to open it in the editor
 - **Rename**: Right-click → Rename, or hover and click the edit icon
-- **Delete**: Right-click → Delete, or hover and click the trash icon  
+- **Delete**: Right-click → Delete, or hover and click the trash icon
 - **Refresh**: Click the refresh icon to update the file listing
 
 ### 🎯 Custom File Extensions
 
 When selecting "Custom File", you can:
+
 - Enter any extension (without the dot): `py`, `go`, `java`, `rb`, `cpp`, etc.
 - The extension automatically detects the appropriate comment style
 - Files get relevant icons based on the extension
@@ -62,8 +72,9 @@ When selecting "Custom File", you can:
 ## Supported File Types
 
 ### 🎯 Predefined Types
+
 - **JavaScript** (.js) - Console.log template
-- **TypeScript** (.ts) - Interface and function templates  
+- **TypeScript** (.ts) - Interface and function templates
 - **HTML** (.html) - Full HTML5 boilerplate
 - **CSS** (.css) - Basic styling template
 - **JSON** (.json) - Structured data template
@@ -72,6 +83,7 @@ When selecting "Custom File", you can:
 - **Plain Text** (.txt) - Simple text file
 
 ### 🌟 Custom Extensions (Examples)
+
 - **Python** (.py), **Go** (.go), **Java** (.java)
 - **Ruby** (.rb), **C++** (.cpp), **C#** (.cs)
 - **PHP** (.php), **Swift** (.swift), **Kotlin** (.kt)
@@ -85,6 +97,7 @@ Each file type includes appropriate templates with timestamps and comment styles
 ## 💡 Use Cases
 
 ### Global Scratchpad Perfect For:
+
 - Code snippets and templates you reuse across projects
 - Personal notes and reminders
 - Learning experiments and practice code
@@ -92,6 +105,7 @@ Each file type includes appropriate templates with timestamps and comment styles
 - Configuration examples
 
 ### Workspace Scratchpad Perfect For:
+
 - Project-specific temporary files
 - Quick prototypes and experiments
 - Meeting notes for the current project
@@ -160,4 +174,4 @@ We welcome contributions! Please feel free to submit issues and pull requests on
 
 **Enjoy using MyScratchPad! 🎉**
 
-*Make your VS Code workflow more efficient with organized, persistent scratch files.*
+_Make your VS Code workflow more efficient with organized, persistent scratch files._
