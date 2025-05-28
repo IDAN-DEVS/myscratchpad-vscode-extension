@@ -9,12 +9,10 @@ yarn.lock
 # Build output
 dist/
 out/
-*.vsix
 
 # VS Code specific files
 .vscode-test/
 .vscode/
-*.vsix
 
 # Environment files
 .env

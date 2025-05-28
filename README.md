@@ -124,6 +124,7 @@ Each file type includes appropriate templates with timestamps and comment styles
 ### How It Works
 
 MyScratchPad uses a shared storage system that all three editors can access. This means:
+
 - Files created in VS Code appear instantly in Cursor and Windsurf
 - Work on a file in Cursor, continue editing in VS Code
 - Perfect for teams using different editors
@@ -149,7 +150,7 @@ None at this time. If you encounter any issues, please [report them on GitHub](h
 🚀 **Cross-Editor Compatibility Update**:
 
 - **🔄 Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf
-- **🎯 Custom File Extensions**: Support for any file extension with intelligent comment detection  
+- **🎯 Custom File Extensions**: Support for any file extension with intelligent comment detection
 - **🎨 Enhanced Icons**: Smart file type detection with appropriate VS Code theme icons
 - **📝 Improved Templates**: Language-specific templates for 40+ file types
 - **🛠️ Better Workspace Detection**: Improved cross-platform workspace handling
@@ -161,11 +162,12 @@ None at this time. If you encounter any issues, please [report them on GitHub](h
 
 ## 🚀 Getting Started
 
-1. **Install** the extension from the VS Code marketplace
-2. **Reload** VS Code if prompted
-3. **Open** the Explorer sidebar (Ctrl/Cmd + Shift + E)
-4. **Find** the "Scratchpad" and "Workspace Scratchpad" views
-5. **Click** the "+" icon to create your first scratch file!
+1. **Install** the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=jccoder.myscratchpad).
+2. **Check the [releases folder](/releases)** for all versions of the extension.
+3. **Reload** VS Code if prompted
+4. **Open** the Explorer sidebar (Ctrl/Cmd + Shift + E)
+5. **Find** the "Scratchpad" and "Workspace Scratchpad" views
+6. **Click** the "+" icon to create your first scratch file!
 
 ## 🛠️ Development
 
