@@ -5,13 +5,11 @@ All notable changes to the "MyScratchPad" extension will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## [0.0.15] - 2025-05-28
+## [0.0.16] - 2025-05-28
 
 ### Added
 
 - **Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf editors
-
 
 ## [0.0.1] - 2025-05-25
 

@@ -77,42 +77,40 @@ export class ScratchpadProvider
     try {
       const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
-      // Get current IDE name
-      const currentIdeName = vscode.env.appName;
+      const splitPart1 = this.scratchpadDir.split("/User/")[0];
+      const splitPart2 = this.scratchpadDir.split("/User/")[1];
 
-      // Get all files from the current directory
-      let allFiles: string[] = [];
-      if (fs.existsSync(this.scratchpadDir)) {
-        allFiles = fs
-          .readdirSync(this.scratchpadDir)
-          .map((file) => path.join(this.scratchpadDir, file));
-      }
+      // Construct the path for each IDE
+      const idePaths = ideNames.map((ideName) => {
+        // remove the "ide path" from part1
+        const newPart1 = splitPart1.split("/").slice(0, -1).join("/");
+        return path.join(newPart1, ideName, "User", splitPart2);
+      });
 
-      // Try to find scratch files in other IDE directories
-      ideNames.forEach((ideName) => {
-        if (ideName === currentIdeName) {
-          return; // Skip current IDE as we already got its files
-        }
+      // Get all files from all IDE paths
+      const allFiles: string[] = [];
+      const uniqueFileNames = new Set<string>();
 
-        // Construct path for other IDEs
-        // For example: /Users/username/Library/Application Support/Code - Insiders/User/globalStorage/...
-        // becomes: /Users/username/Library/Application Support/Code/User/globalStorage/...
-        const ideSpecificDir = this.scratchpadDir.replace(
-          /Code( - Insiders)?|Cursor|Windsurf/g,
-          ideName
-        );
-
-        if (fs.existsSync(ideSpecificDir)) {
+      idePaths.forEach((idePath) => {
+        if (fs.existsSync(idePath)) {
           const ideFiles = fs
-            .readdirSync(ideSpecificDir)
-            .map((file) => path.join(ideSpecificDir, file));
-          allFiles = allFiles.concat(ideFiles);
+            .readdirSync(idePath)
+            .map((file) => path.join(idePath, file))
+            .filter((filePath) => !fs.statSync(filePath).isDirectory());
+
+          // Add files, filtering by unique file names
+          ideFiles.forEach((filePath) => {
+            const fileName = path.basename(filePath);
+            if (!uniqueFileNames.has(fileName)) {
+              uniqueFileNames.add(fileName);
+              allFiles.push(filePath);
+            }
+          });
         }
       });
 
       // Process all found files
       return allFiles
-        .filter((filePath) => !fs.statSync(filePath).isDirectory())
         .map((filePath) => {
           const stats = fs.statSync(filePath);
           const fileName = path.basename(filePath);
