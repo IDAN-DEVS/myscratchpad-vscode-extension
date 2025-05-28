@@ -1,6 +1,6 @@
 # MyScratchPad VS Code Extension
 
-A powerful scratchpad extension for Visual Studio Code that provides both global and workspace-specific scratch files. Create, manage, and organize temporary files with support for multiple file types and custom extensions.
+A powerful scratchpad extension for Visual Studio Code that provides both global and workspace-specific scratch files. Create, manage, and organize temporary files with support for multiple file types and custom extensions. **Works seamlessly across VS Code, Cursor, and Windsurf editors** - files created in one editor are instantly available in the others!
 
 <br/>
 <video src="https://pub-db4f9d2ca78f4d78a89b8e54dca08c9f.r2.dev/installation%20and%20usage%20myscratchpad%20demo%20v1.mp4" autoplay loop muted playsinline></video>
@@ -30,6 +30,7 @@ A powerful scratchpad extension for Visual Studio Code that provides both global
 - Global files stored in VS Code's global storage (persist across all projects)
 - Workspace files organized by workspace folder name
 - Cross-platform path handling for Windows, macOS, and Linux
+- **Cross-Editor Compatibility**: Files sync between VS Code, Cursor, and Windsurf
 
 ## How to Use
 
@@ -112,9 +113,25 @@ Each file type includes appropriate templates with timestamps and comment styles
 - Temporary data files and mock content
 - Project-specific snippets
 
+## 🔄 Cross-Editor Compatibility
+
+**MyScratchPad works seamlessly across multiple editors!**
+
+- **VS Code**: Full native support
+- **Cursor**: Complete compatibility - all files sync automatically
+- **Windsurf**: Perfect integration - create files in one, access in all
+
+### How It Works
+
+MyScratchPad uses a shared storage system that all three editors can access. This means:
+- Files created in VS Code appear instantly in Cursor and Windsurf
+- Work on a file in Cursor, continue editing in VS Code
+- Perfect for teams using different editors
+- No manual file transfers or exports needed
+
 ## Requirements
 
-- Visual Studio Code 1.100.0 or higher
+- Visual Studio Code 1.95.0 or higher (also works with Cursor and Windsurf)
 - No additional dependencies required
 
 ## Extension Settings
@@ -127,16 +144,18 @@ None at this time. If you encounter any issues, please [report them on GitHub](h
 
 ## Release Notes
 
-### 0.0.1
+### 0.0.15 - Latest
 
-🎉 Initial release of MyScratchPad:
+🚀 **Cross-Editor Compatibility Update**:
 
-- **Dual Scratchpad System**: Global and workspace-specific file management
-- **Custom File Extensions**: Support for any file type with smart templates
-- **Smart Icons**: Automatic file type detection and appropriate icons
-- **Cross-Platform**: Works on Windows, macOS, and Linux
-- **Rich Templates**: Predefined templates for common file types
-- **Intuitive UI**: Easy file operations through Explorer sidebar
+- **🔄 Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf
+- **🎯 Custom File Extensions**: Support for any file extension with intelligent comment detection  
+- **🎨 Enhanced Icons**: Smart file type detection with appropriate VS Code theme icons
+- **📝 Improved Templates**: Language-specific templates for 40+ file types
+- **🛠️ Better Workspace Detection**: Improved cross-platform workspace handling
+- **💼 Dual Scratchpad System**: Global and workspace-specific file management
+- **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
+- **⚡ Intuitive UI**: Easy file operations through Explorer sidebar
 
 ---
 

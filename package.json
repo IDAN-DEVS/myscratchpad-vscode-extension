@@ -2,7 +2,7 @@
   "name": "myscratchpad",
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "publisher": "jccoder",
   "author": {
     "name": "JC Coder"
@@ -43,12 +43,12 @@
         {
           "icon": "",
           "id": "scratchpadExplorer",
-          "name": "All Scratchpad"
+          "name": "All Scratchpads"
         },
         {
           "icon": "",
           "id": "workspaceScratchpadExplorer",
-          "name": "This Workspace Scratchpad"
+          "name": "This Workspace Scratchpads"
         }
       ]
     },

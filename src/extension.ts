@@ -22,8 +22,6 @@ export function activate(context: vscode.ExtensionContext) {
     ? path.basename(vscode.workspace.workspaceFolders[0].uri.fsPath)
     : "default";
 
-  console.log("workspaceFolderPath", workspaceFolderPath);
-
   // Create workspace-specific scratchpad directory
   const workspaceScratchpadDir = vscode.workspace.workspaceFolders
     ? path.join(
@@ -66,20 +64,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  // Helper function to determine which service/provider to use based on view context
-  const getServiceAndProvider = (viewId?: string) => {
-    if (viewId === "workspaceScratchpadExplorer") {
-      return {
-        service: workspaceScratchpadService,
-        provider: workspaceScratchpadProvider,
-      };
-    }
-    return {
-      service: globalScratchpadService,
-      provider: globalScratchpadProvider,
-    };
-  };
-
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -104,7 +88,9 @@ export function activate(context: vscode.ExtensionContext) {
         const treeItem = item as any;
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
-          const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
+          const isWorkspaceFile = treeItem.scratchFile.path.includes(
+            "workspaceScratchFiles"
+          );
           const { service, provider } = isWorkspaceFile
             ? {
                 service: workspaceScratchpadService,
@@ -131,7 +117,9 @@ export function activate(context: vscode.ExtensionContext) {
         const treeItem = item as any;
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
-          const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
+          const isWorkspaceFile = treeItem.scratchFile.path.includes(
+            "workspaceScratchFiles"
+          );
           const { service, provider } = isWorkspaceFile
             ? {
                 service: workspaceScratchpadService,

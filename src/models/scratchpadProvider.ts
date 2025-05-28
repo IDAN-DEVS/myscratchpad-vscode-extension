@@ -45,7 +45,10 @@ export class ScratchpadProvider
     ScratchpadTreeItem | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  constructor(private scratchpadDir: string, public readonly scope: string = "global") {
+  constructor(
+    private scratchpadDir: string,
+    public readonly scope: string = "global"
+  ) {
     // Ensure the scratchpad directory exists
     if (!fs.existsSync(scratchpadDir)) {
       fs.mkdirSync(scratchpadDir, { recursive: true });
@@ -72,18 +75,49 @@ export class ScratchpadProvider
 
   private getScratchFiles(): ScratchpadTreeItem[] {
     try {
-      const files = fs.readdirSync(this.scratchpadDir);
+      const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
-      return files
-        .filter(
-          (file) =>
-            !fs.statSync(path.join(this.scratchpadDir, file)).isDirectory()
-        )
-        .map((file) => {
-          const filePath = path.join(this.scratchpadDir, file);
+      // Get current IDE name
+      const currentIdeName = vscode.env.appName;
+
+      // Get all files from the current directory
+      let allFiles: string[] = [];
+      if (fs.existsSync(this.scratchpadDir)) {
+        allFiles = fs
+          .readdirSync(this.scratchpadDir)
+          .map((file) => path.join(this.scratchpadDir, file));
+      }
+
+      // Try to find scratch files in other IDE directories
+      ideNames.forEach((ideName) => {
+        if (ideName === currentIdeName) {
+          return; // Skip current IDE as we already got its files
+        }
+
+        // Construct path for other IDEs
+        // For example: /Users/username/Library/Application Support/Code - Insiders/User/globalStorage/...
+        // becomes: /Users/username/Library/Application Support/Code/User/globalStorage/...
+        const ideSpecificDir = this.scratchpadDir.replace(
+          /Code( - Insiders)?|Cursor|Windsurf/g,
+          ideName
+        );
+
+        if (fs.existsSync(ideSpecificDir)) {
+          const ideFiles = fs
+            .readdirSync(ideSpecificDir)
+            .map((file) => path.join(ideSpecificDir, file));
+          allFiles = allFiles.concat(ideFiles);
+        }
+      });
+
+      // Process all found files
+      return allFiles
+        .filter((filePath) => !fs.statSync(filePath).isDirectory())
+        .map((filePath) => {
           const stats = fs.statSync(filePath);
-          const extension = path.extname(file).slice(1); // Remove the dot
-          const name = path.basename(file);
+          const fileName = path.basename(filePath);
+          const extension = path.extname(fileName).slice(1); // Remove the dot
+          const name = fileName;
 
           const scratchFile: IScratchFile = {
             name,
