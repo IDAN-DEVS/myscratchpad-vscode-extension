@@ -8,7 +8,10 @@ import {
 } from "../models/scratchFile";
 
 export class ScratchpadService {
-  constructor(private scratchpadDir: string, public readonly scope: string = "global") {
+  constructor(
+    private scratchpadDir: string,
+    public readonly scope: string = "global"
+  ) {
     // Ensure the scratchpad directory exists
     if (!fs.existsSync(scratchpadDir)) {
       fs.mkdirSync(scratchpadDir, { recursive: true });
@@ -132,7 +135,7 @@ export class ScratchpadService {
   private async askForFileType(): Promise<FileTypeEnum | string | undefined> {
     const items = Object.entries(fileTypeLabels).map(([ext, label]) => ({
       label,
-      description: ext === 'custom' ? 'Enter your own extension' : `.${ext}`,
+      description: ext === "custom" ? "Enter your own extension" : `.${ext}`,
       extension: ext as FileTypeEnum,
     }));
 
@@ -148,7 +151,11 @@ export class ScratchpadService {
           if (!value) {
             return "Extension cannot be empty";
           }
-          if (value.includes('.') || value.includes('/') || value.includes('\\')) {
+          if (
+            value.includes(".") ||
+            value.includes("/") ||
+            value.includes("\\")
+          ) {
             return "Extension should not contain dots or slashes";
           }
           if (!/^[a-zA-Z0-9]+$/.test(value)) {
@@ -191,7 +198,7 @@ export class ScratchpadService {
         return "sql_";
       default:
         // For custom extensions, use the extension as prefix
-        if (typeof fileType === 'string') {
+        if (typeof fileType === "string") {
           return `${fileType}_`;
         }
         return "scratch_";
@@ -225,7 +232,7 @@ export class ScratchpadService {
 
       default:
         // For custom file types, provide a generic template with appropriate comment style
-        if (typeof fileType === 'string') {
+        if (typeof fileType === "string") {
           const commentChar = this.getCommentCharForExtension(fileType);
           return `${commentChar} Created on ${new Date().toLocaleString()}\n\n${commentChar} ${fileType.toUpperCase()} Scratch File\n\n`;
         }
@@ -236,42 +243,42 @@ export class ScratchpadService {
   private getCommentCharForExtension(extension: string): string {
     // Common comment patterns for different file types
     const commentMap: { [key: string]: string } = {
-      py: '#',
-      rb: '#',
-      sh: '#',
-      bash: '#',
-      r: '#',
-      pl: '#',
-      php: '//',
-      go: '//',
-      java: '//',
-      c: '//',
-      cpp: '//',
-      cs: '//',
-      swift: '//',
-      kt: '//',
-      scala: '//',
-      rust: '//',
-      rs: '//',
-      dart: '//',
-      lua: '--',
-      hs: '--',
-      elm: '--',
-      ex: '#',
-      exs: '#',
-      erl: '%',
-      clj: ';',
-      lisp: ';',
+      py: "#",
+      rb: "#",
+      sh: "#",
+      bash: "#",
+      r: "#",
+      pl: "#",
+      php: "//",
+      go: "//",
+      java: "//",
+      c: "//",
+      cpp: "//",
+      cs: "//",
+      swift: "//",
+      kt: "//",
+      scala: "//",
+      rust: "//",
+      rs: "//",
+      dart: "//",
+      lua: "--",
+      hs: "--",
+      elm: "--",
+      ex: "#",
+      exs: "#",
+      erl: "%",
+      clj: ";",
+      lisp: ";",
       vim: '"',
-      ini: ';',
-      cfg: '#',
-      yaml: '#',
-      yml: '#',
-      toml: '#',
-      bat: 'REM',
-      ps1: '#',
+      ini: ";",
+      cfg: "#",
+      yaml: "#",
+      yml: "#",
+      toml: "#",
+      bat: "REM",
+      ps1: "#",
     };
 
-    return commentMap[extension.toLowerCase()] || '//';
+    return commentMap[extension.toLowerCase()] || "//";
   }
 }
