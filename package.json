@@ -82,6 +82,26 @@
         "command": "myscratchpad.refreshWorkspaceScratchpad",
         "title": "Refresh Workspace Scratchpad",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "myscratchpad.createScratchFileFromSelection",
+        "title": "Create Global Scratch File from Selection",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.createWorkspaceScratchFileFromSelection",
+        "title": "Create Workspace Scratch File from Selection",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.createScratchFileFromFile",
+        "title": "Create Global Scratch File from File",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.createWorkspaceScratchFileFromFile",
+        "title": "Create Workspace Scratch File from File",
+        "icon": "$(new-file)"
       }
     ],
     "menus": {
@@ -127,6 +147,30 @@
           "command": "myscratchpad.renameScratchFile",
           "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "myscratchpad.createScratchFileFromSelection",
+          "when": "editorHasSelection",
+          "group": "z_commands"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFileFromSelection",
+          "when": "editorHasSelection",
+          "group": "z_commands"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "myscratchpad.createScratchFileFromFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "z_commands"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFileFromFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "z_commands"
         }
       ]
     }

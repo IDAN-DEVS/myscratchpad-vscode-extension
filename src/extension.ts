@@ -151,6 +151,38 @@ export function activate(context: vscode.ExtensionContext) {
       }
     ),
 
+    vscode.commands.registerCommand(
+      "myscratchpad.createScratchFileFromSelection",
+      async () => {
+        await globalScratchpadService.createScratchFileFromSelection();
+        globalScratchpadProvider.refresh();
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createWorkspaceScratchFileFromSelection",
+      async () => {
+        await workspaceScratchpadService.createScratchFileFromSelection();
+        workspaceScratchpadProvider.refresh();
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createScratchFileFromFile",
+      async (fileUri: vscode.Uri) => {
+        await globalScratchpadService.createScratchFileFromFile(fileUri);
+        globalScratchpadProvider.refresh();
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createWorkspaceScratchFileFromFile",
+      async (fileUri: vscode.Uri) => {
+        await workspaceScratchpadService.createScratchFileFromFile(fileUri);
+        workspaceScratchpadProvider.refresh();
+      }
+    ),
+
     globalTreeView,
     workspaceTreeView
   );

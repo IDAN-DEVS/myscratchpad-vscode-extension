@@ -19,25 +19,74 @@ export class ScratchpadService {
   }
 
   /**
-   * Create a new scratch file
+   * Create a new scratch file from selected text
    */
-  async createScratchFile(): Promise<void> {
-    // Ask the user for the file type
-    const fileType = await this.askForFileType();
-    if (!fileType) {
-      return; // User cancelled
+  async createScratchFileFromSelection(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage("No active editor found");
+      return;
     }
 
-    // Ask for a name
-    const defaultName = this.generateDefaultName(fileType);
+    const selection = editor.selection;
+    const selectedText = editor.document.getText(selection);
+
+    if (!selectedText.trim()) {
+      vscode.window.showErrorMessage("No text selected");
+      return;
+    }
+
+    // Generate suggested filename based on current file
+    let suggestedName: string | undefined;
+    if (editor.document.fileName) {
+      const originalFileName = path.basename(editor.document.fileName);
+      const extension = path.extname(originalFileName);
+      const nameWithoutExt = path.basename(originalFileName, extension);
+      suggestedName = `${nameWithoutExt}_scratch${extension}`;
+    }
+
+    await this.createScratchFile(selectedText, suggestedName);
+  }
+
+  /**
+   * Create a new scratch file from an existing file
+   */
+  async createScratchFileFromFile(fileUri: vscode.Uri): Promise<void> {
+    try {
+      // Read the file content
+      const fileContent = await vscode.workspace.fs.readFile(fileUri);
+      const content = Buffer.from(fileContent).toString('utf8');
+      
+      // Generate suggested filename based on original file
+      const originalFileName = path.basename(fileUri.fsPath);
+      const extension = path.extname(originalFileName);
+      const nameWithoutExt = path.basename(originalFileName, extension);
+      const suggestedName = `${nameWithoutExt}_scratch${extension}`;
+      
+      await this.createScratchFile(content, suggestedName);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to read file: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new scratch file
+   */
+  async createScratchFile(initialContent?: string, suggestedName?: string): Promise<void> {
+    // Ask for a name with extension
+    const defaultName = suggestedName || this.generateDefaultName();
     const fileName = await vscode.window.showInputBox({
-      prompt: "Enter a name for your scratch file",
+      prompt:
+        "Enter a name for your scratch file (include extension, e.g., note.txt, script.js, data.json)",
       value: defaultName,
       validateInput: (value) => {
         if (!value) {
           return "Name cannot be empty";
         }
-        const fullPath = path.join(this.scratchpadDir, `${value}.${fileType}`);
+        if (!value.includes(".")) {
+          return "Please include a file extension (e.g., .txt, .js, .md)";
+        }
+        const fullPath = path.join(this.scratchpadDir, value);
         if (fs.existsSync(fullPath)) {
           return "A file with this name already exists";
         }
@@ -49,11 +98,26 @@ export class ScratchpadService {
       return; // User cancelled
     }
 
-    // Create the file
-    const fullPath = path.join(this.scratchpadDir, `${fileName}.${fileType}`);
-    const initialContent = this.getInitialContent(fileType);
+    // Extract extension from filename
+    const extension = path.extname(fileName).slice(1); // Remove the dot
 
-    fs.writeFileSync(fullPath, initialContent);
+    // Create the file
+    const fullPath = path.join(this.scratchpadDir, fileName);
+    let content: string;
+
+    if (initialContent !== undefined) {
+      content = initialContent;
+    } else {
+      // Try to get clipboard content, fallback to default content
+      try {
+        const clipboardText = await vscode.env.clipboard.readText();
+        content = clipboardText.trim() || this.getInitialContent(extension);
+      } catch (error) {
+        content = this.getInitialContent(extension);
+      }
+    }
+
+    fs.writeFileSync(fullPath, content);
 
     // Open the file
     const document = await vscode.workspace.openTextDocument(fullPath);
@@ -132,111 +196,45 @@ export class ScratchpadService {
     }
   }
 
-  private async askForFileType(): Promise<FileTypeEnum | string | undefined> {
-    const items = Object.entries(fileTypeLabels).map(([ext, label]) => ({
-      label,
-      description: ext === "custom" ? "Enter your own extension" : `.${ext}`,
-      extension: ext as FileTypeEnum,
-    }));
-
-    const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: "Select a file type for your scratch file",
-    });
-
-    if (selected?.extension === FileTypeEnum.Custom) {
-      const customExtension = await vscode.window.showInputBox({
-        prompt: "Enter the file extension (without the dot)",
-        placeHolder: "e.g., py, go, rb, java",
-        validateInput: (value) => {
-          if (!value) {
-            return "Extension cannot be empty";
-          }
-          if (
-            value.includes(".") ||
-            value.includes("/") ||
-            value.includes("\\")
-          ) {
-            return "Extension should not contain dots or slashes";
-          }
-          if (!/^[a-zA-Z0-9]+$/.test(value)) {
-            return "Extension should only contain letters and numbers";
-          }
-          return null;
-        },
-      });
-      return customExtension;
-    }
-
-    return selected?.extension;
-  }
-
-  private generateDefaultName(fileType: FileTypeEnum | string): string {
+  private generateDefaultName(): string {
     const timestamp = new Date()
       .toISOString()
       .replace(/[-:]/g, "")
       .replace("T", "_")
       .substring(0, 15);
-    const prefix = this.getFileTypePrefix(fileType);
-    return `${prefix}${timestamp}`;
+    return `scratch_${timestamp}.txt`;
   }
 
-  private getFileTypePrefix(fileType: FileTypeEnum | string): string {
-    switch (fileType) {
-      case FileTypeEnum.JavaScript:
-        return "js_";
-      case FileTypeEnum.TypeScript:
-        return "ts_";
-      case FileTypeEnum.HTML:
-        return "html_";
-      case FileTypeEnum.CSS:
-        return "css_";
-      case FileTypeEnum.JSON:
-        return "json_";
-      case FileTypeEnum.Markdown:
-        return "md_";
-      case FileTypeEnum.SQL:
-        return "sql_";
-      default:
-        // For custom extensions, use the extension as prefix
-        if (typeof fileType === "string") {
-          return `${fileType}_`;
-        }
-        return "scratch_";
-    }
-  }
-
-  private getInitialContent(fileType: FileTypeEnum | string): string {
+  private getInitialContent(extension: string): string {
     const dateComment = `// Created on ${new Date().toLocaleString()}`;
 
-    switch (fileType) {
-      case FileTypeEnum.JavaScript:
+    switch (extension.toLowerCase()) {
+      case "js":
         return `${dateComment}\n\n// JavaScript Scratch File\nconsole.log('Hello, World!');\n`;
 
-      case FileTypeEnum.TypeScript:
+      case "ts":
         return `${dateComment}\n\n// TypeScript Scratch File\ninterface Person {\n  name: string;\n  age: number;\n}\n\nconst greeting = (person: Person): string => {\n  return \`Hello, \${person.name}!\`;\n};\n\nconsole.log(greeting({ name: 'World', age: 0 }));\n`;
 
-      case FileTypeEnum.HTML:
+      case "html":
         return `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Scratch</title>\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      margin: 2rem;\n    }\n  </style>\n</head>\n<body>\n  <h1>HTML Scratch</h1>\n  <p>Created on ${new Date().toLocaleString()}</p>\n</body>\n</html>\n`;
 
-      case FileTypeEnum.CSS:
+      case "css":
         return `/* Created on ${new Date().toLocaleString()} */\n\n/* CSS Scratch File */\nbody {\n  font-family: Arial, sans-serif;\n  margin: 0;\n  padding: 20px;\n  color: #333;\n  background-color: #f5f5f5;\n}\n\n.container {\n  max-width: 1200px;\n  margin: 0 auto;\n}\n`;
 
-      case FileTypeEnum.JSON:
+      case "json":
         return `{\n  "created": "${new Date().toISOString()}",\n  "name": "JSON Scratch",\n  "items": [\n    {\n      "id": 1,\n      "value": "Example"\n    }\n  ]\n}\n`;
 
-      case FileTypeEnum.Markdown:
+      case "md":
+      case "markdown":
         return `# Markdown Scratch\n\nCreated on ${new Date().toLocaleString()}\n\n## Heading\n\nSample text here.\n\n* List item 1\n* List item 2\n* List item 3\n\n## Code Example\n\n\`\`\`javascript\nconsole.log('Hello, World!');\n\`\`\`\n`;
 
-      case FileTypeEnum.SQL:
+      case "sql":
         return `-- Created on ${new Date().toLocaleString()}\n\n-- SQL Scratch File\nSELECT *\nFROM users\nWHERE active = true\nORDER BY created_at DESC\nLIMIT 10;\n`;
 
       default:
         // For custom file types, provide a generic template with appropriate comment style
-        if (typeof fileType === "string") {
-          const commentChar = this.getCommentCharForExtension(fileType);
-          return `${commentChar} Created on ${new Date().toLocaleString()}\n\n${commentChar} ${fileType.toUpperCase()} Scratch File\n\n`;
-        }
-        return `Created on ${new Date().toLocaleString()}\n\nScratch file for notes and temporary content.\n`;
+        const commentChar = this.getCommentCharForExtension(extension);
+        return `${commentChar} Created on ${new Date().toLocaleString()}\n\n${commentChar} ${extension.toUpperCase()} Scratch File\n\n`;
     }
   }
 
