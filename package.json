@@ -102,6 +102,10 @@
         "command": "myscratchpad.createWorkspaceScratchFileFromFile",
         "title": "Create Workspace Scratch File from File",
         "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.addFileToCodyAi",
+        "title": "Add to Cody AI"
       }
     ],
     "menus": {
@@ -147,6 +151,10 @@
           "command": "myscratchpad.renameScratchFile",
           "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
+        },
+        {
+          "command": "myscratchpad.addFileToCodyAi",
+          "when": "view == workspaceScratchpadExplorer"
         }
       ],
       "editor/context": [

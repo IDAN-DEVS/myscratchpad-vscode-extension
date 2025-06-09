@@ -47,6 +47,7 @@ const vscode = __importStar(__webpack_require__(1));
 const path = __importStar(__webpack_require__(2));
 const scratchpadProvider_1 = __webpack_require__(3);
 const scratchpadService_1 = __webpack_require__(6);
+const codyService_1 = __webpack_require__(7);
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
@@ -136,6 +137,8 @@ function activate(context) {
     }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFileFromFile", async (fileUri) => {
         await workspaceScratchpadService.createScratchFileFromFile(fileUri);
         workspaceScratchpadProvider.refresh();
+    }), vscode.commands.registerCommand("myscratchpad.addFileToCodyAi", async (fileUri) => {
+        await codyService_1.codyService.executeMentionFileCommand(fileUri);
     }), globalTreeView, workspaceTreeView);
 }
 // This method is called when your extension is deactivated
@@ -692,6 +695,95 @@ class ScratchpadService {
     }
 }
 exports.ScratchpadService = ScratchpadService;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.codyService = void 0;
+const vscode = __importStar(__webpack_require__(1));
+const extensionName = "Cody Ai";
+const extensionIdentifier = "sourcegraph.cody-ai";
+const CODY_COMMAND = {
+    MENTION: {
+        FILE: "cody.mention.file",
+    },
+    COMMAND: {
+        CUSTOM: "cody.command.custom",
+    },
+};
+function checkCodyIsInstalledAndReady() {
+    try {
+        const codyExtension = vscode.extensions.getExtension(extensionIdentifier);
+        if (!codyExtension) {
+            vscode.window.showErrorMessage(`${extensionName} extension is not installed or is disabled.`);
+            return false;
+        }
+        if (!codyExtension.isActive) {
+            vscode.window.showErrorMessage(`${extensionName} extension is not active.`);
+            return false;
+        }
+        vscode.window.showInformationMessage(`${extensionName} extension is ready.`);
+        return true;
+    }
+    catch (error) {
+        console.error("Error checking for cody extension", error);
+        vscode.window.showErrorMessage(`Failed to check ${extensionName} extension status.`);
+        return false;
+    }
+}
+async function executeMentionFileCommand(uri) {
+    try {
+        const isReady = checkCodyIsInstalledAndReady();
+        if (!isReady) {
+            return;
+        }
+        await vscode.commands.executeCommand(CODY_COMMAND.MENTION.FILE, uri);
+        vscode.window.showInformationMessage(`File added as context in ${extensionName}.`);
+    }
+    catch (error) {
+        vscode.window.showErrorMessage(`Failed to trigger ${extensionName} to mention file: ${error.message}`);
+    }
+}
+exports.codyService = {
+    executeMentionFileCommand,
+};
 
 
 /***/ })
