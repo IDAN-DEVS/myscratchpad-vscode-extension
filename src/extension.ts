@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as path from "path";
-import { ScratchpadProvider } from "./models/scratchpadProvider";
+import { ScratchpadProvider, IScratchFolder } from "./models/scratchpadProvider";
 import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
 import { codyService } from "./services/thirdParties/codyService";
@@ -54,32 +54,85 @@ export function activate(context: vscode.ExtensionContext) {
   // Register tree data providers
   const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
     treeDataProvider: globalScratchpadProvider,
-    showCollapseAll: false,
+    showCollapseAll: true,
+    canSelectMany: true,
+    dragAndDropController: globalScratchpadProvider,
   });
 
   const workspaceTreeView = vscode.window.createTreeView(
     "workspaceScratchpadExplorer",
     {
       treeDataProvider: workspaceScratchpadProvider,
-      showCollapseAll: false,
+      showCollapseAll: true,
+      canSelectMany: true,
+      dragAndDropController: workspaceScratchpadProvider,
     }
   );
+
+  // Track current selections
+  let currentGlobalSelection: any = undefined;
+  let currentWorkspaceSelection: any = undefined;
+
+  // Helper function to get base path from selected item
+  function getBasePath(selectedItem: any): string | undefined {
+    if (!selectedItem) return undefined;
+    
+    // If it's a folder, use its path
+    if (selectedItem.scratchFolder) {
+      return selectedItem.scratchFolder.path;
+    }
+    
+    // If it's a file, use its parent directory
+    if (selectedItem.scratchFile) {
+      return path.dirname(selectedItem.scratchFile.path);
+    }
+    
+    return undefined;
+  }
+
+  // Listen for selection changes in global tree view
+  globalTreeView.onDidChangeSelection(e => {
+    currentGlobalSelection = e.selection[0]
+  });
+
+  // Listen for selection changes in workspace tree view
+  workspaceTreeView.onDidChangeSelection(e => {
+    currentWorkspaceSelection = e.selection[0]
+  });
 
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFile",
-      async () => {
-        await globalScratchpadService.createScratchFile();
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await globalScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFile",
-      async () => {
-        await workspaceScratchpadService.createScratchFile();
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await workspaceScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
@@ -87,6 +140,8 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.deleteScratchFile",
       async (item: ScratchpadProvider) => {
         const treeItem = item as any;
+        
+        // Handle file deletion
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
           const isWorkspaceFile = treeItem.scratchFile.path.includes(
@@ -109,6 +164,30 @@ export function activate(context: vscode.ExtensionContext) {
             provider.refresh();
           }
         }
+        // Handle folder deletion
+        else if (treeItem?.scratchFolder) {
+          // Determine which service to use based on folder path
+          const isWorkspaceFolder = treeItem.scratchFolder.path.includes(
+            "workspaceScratchFiles"
+          );
+          const { service, provider } = isWorkspaceFolder
+            ? {
+                service: workspaceScratchpadService,
+                provider: workspaceScratchpadProvider,
+              }
+            : {
+                service: globalScratchpadService,
+                provider: globalScratchpadProvider,
+              };
+
+          const success = await service.deleteScratchFolder(
+            treeItem.scratchFolder.path,
+            treeItem.scratchFolder.name
+          );
+          if (success) {
+            provider.refresh();
+          }
+        }
       }
     ),
 
@@ -116,6 +195,8 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.renameScratchFile",
       async (item: ScratchpadProvider) => {
         const treeItem = item as any;
+        
+        // Handle file renaming
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
           const isWorkspaceFile = treeItem.scratchFile.path.includes(
@@ -138,6 +219,30 @@ export function activate(context: vscode.ExtensionContext) {
             provider.refresh();
           }
         }
+        // Handle folder renaming
+        else if (treeItem?.scratchFolder) {
+          // Determine which service to use based on folder path
+          const isWorkspaceFolder = treeItem.scratchFolder.path.includes(
+            "workspaceScratchFiles"
+          );
+          const { service, provider } = isWorkspaceFolder
+            ? {
+                service: workspaceScratchpadService,
+                provider: workspaceScratchpadProvider,
+              }
+            : {
+                service: globalScratchpadService,
+                provider: globalScratchpadProvider,
+              };
+
+          const success = await service.renameScratchFolder(
+            treeItem.scratchFolder.path,
+            treeItem.scratchFolder.name
+          );
+          if (success) {
+            provider.refresh();
+          }
+        }
       }
     ),
 
@@ -154,33 +259,69 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromSelection",
-      async () => {
-        await globalScratchpadService.createScratchFileFromSelection();
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await globalScratchpadService.createScratchFileFromSelection(parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromSelection",
-      async () => {
-        await workspaceScratchpadService.createScratchFileFromSelection();
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await workspaceScratchpadService.createScratchFileFromSelection(parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromFile",
-      async (fileUri: vscode.Uri) => {
-        await globalScratchpadService.createScratchFileFromFile(fileUri);
+      async (fileUri: vscode.Uri, item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await globalScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromFile",
-      async (fileUri: vscode.Uri) => {
-        await workspaceScratchpadService.createScratchFileFromFile(fileUri);
+      async (fileUri: vscode.Uri, item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await workspaceScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
@@ -188,6 +329,88 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.addFileToCodyAi",
       async (fileUri: vscode.Uri) => {
         await codyService.executeMentionFileCommand(fileUri);
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createScratchFolder",
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await globalScratchpadService.createScratchFolder(parentFolderPath);
+        globalScratchpadProvider.refresh();
+        
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createWorkspaceScratchFolder", 
+      async (item?: any) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
+        await workspaceScratchpadService.createScratchFolder(parentFolderPath);
+        workspaceScratchpadProvider.refresh();
+        
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.revealInFinder",
+      async (item: any) => {
+        if (!item) return;
+        
+        let targetPath: string | undefined;
+        
+        // Get the path based on item type
+        if (item.scratchFile) {
+          targetPath = item.scratchFile.path;
+        } else if (item.scratchFolder) {
+          targetPath = item.scratchFolder.path;
+        }
+        
+        if (targetPath) {
+          // Use VS Code's built-in command to reveal in file explorer
+          await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(targetPath));
+        }
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.openInTerminal",
+      async (item: any) => {
+        if (!item) return;
+        
+        let targetPath: string | undefined;
+        
+        // Get the directory path based on item type
+        if (item.scratchFile) {
+          // For files, open terminal in the parent directory
+          targetPath = path.dirname(item.scratchFile.path);
+        } else if (item.scratchFolder) {
+          // For folders, open terminal in the folder itself
+          targetPath = item.scratchFolder.path;
+        }
+        
+        if (targetPath) {
+          // Create a new terminal and change to the target directory
+          const terminal = vscode.window.createTerminal({
+            name: 'Scratchpad Terminal',
+            cwd: targetPath
+          });
+          terminal.show();
+        }
       }
     ),
 

@@ -2,7 +2,7 @@
   "name": "myscratchpad",
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "publisher": "jccoder",
   "author": {
     "name": "JC Coder"
@@ -10,11 +10,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension.git"
+    "url": "https://github.com/lirancr/myscratchpad-vscode-extension.git"
   },
-  "homepage": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/blob/main/README.md",
+  "homepage": "https://github.com/lirancr/myscratchpad-vscode-extension/blob/main/README.md",
   "bugs": {
-    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/issues"
+    "url": "https://github.com/lirancr/myscratchpad-vscode-extension/issues"
   },
   "keywords": [
     "scratchpad",
@@ -65,12 +65,12 @@
       },
       {
         "command": "myscratchpad.deleteScratchFile",
-        "title": "Delete Scratch File",
+        "title": "Delete",
         "icon": "$(trash)"
       },
       {
         "command": "myscratchpad.renameScratchFile",
-        "title": "Rename Scratch File",
+        "title": "Rename",
         "icon": "$(edit)"
       },
       {
@@ -106,6 +106,36 @@
       {
         "command": "myscratchpad.addFileToCodyAi",
         "title": "Add to Cody AI"
+      },
+      {
+        "command": "myscratchpad.createScratchFolder",
+        "title": "Create New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "myscratchpad.createWorkspaceScratchFolder",
+        "title": "Create New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "myscratchpad.collapseAllScratchpad",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "myscratchpad.collapseAllWorkspaceScratchpad",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "myscratchpad.revealInFinder",
+        "title": "Reveal in Finder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "myscratchpad.openInTerminal",
+        "title": "Open in Integrated Terminal",
+        "icon": "$(terminal)"
       }
     ],
     "menus": {
@@ -113,22 +143,32 @@
         {
           "command": "myscratchpad.createScratchFile",
           "when": "view == scratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "myscratchpad.createScratchFolder",
+          "when": "view == scratchpadExplorer",
+          "group": "navigation@2"
         },
         {
           "command": "myscratchpad.refreshScratchpad",
           "when": "view == scratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@3"
         },
         {
           "command": "myscratchpad.createWorkspaceScratchFile",
           "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFolder",
+          "when": "view == workspaceScratchpadExplorer",
+          "group": "navigation@2"
         },
         {
           "command": "myscratchpad.refreshWorkspaceScratchpad",
           "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -143,6 +183,16 @@
           "group": "inline"
         },
         {
+          "command": "myscratchpad.createScratchFile",
+          "when": "view == scratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
+          "command": "myscratchpad.createScratchFolder",
+          "when": "view == scratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
           "command": "myscratchpad.deleteScratchFile",
           "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
@@ -153,8 +203,28 @@
           "group": "inline"
         },
         {
+          "command": "myscratchpad.createWorkspaceScratchFile",
+          "when": "view == workspaceScratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFolder",
+          "when": "view == workspaceScratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
           "command": "myscratchpad.addFileToCodyAi",
           "when": "view == workspaceScratchpadExplorer"
+        },
+        {
+          "command": "myscratchpad.revealInFinder",
+          "when": "view == scratchpadExplorer || view == workspaceScratchpadExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.openInTerminal",
+          "when": "view == scratchpadExplorer || view == workspaceScratchpadExplorer",
+          "group": "navigation"
         }
       ],
       "editor/context": [
@@ -192,7 +262,8 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "release": "px @vscode/vsce package -o releases"
   },
   "devDependencies": {
     "@types/vscode": "^1.79.0",

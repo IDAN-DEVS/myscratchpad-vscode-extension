@@ -21,7 +21,7 @@ export class ScratchpadService {
   /**
    * Create a new scratch file from selected text
    */
-  async createScratchFileFromSelection(): Promise<void> {
+  async createScratchFileFromSelection(parentFolderPath?: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showErrorMessage("No active editor found");
@@ -45,13 +45,13 @@ export class ScratchpadService {
       suggestedName = `${nameWithoutExt}_scratch${extension}`;
     }
 
-    await this.createScratchFile(selectedText, suggestedName);
+    await this.createScratchFile(selectedText, suggestedName, parentFolderPath);
   }
 
   /**
    * Create a new scratch file from an existing file
    */
-  async createScratchFileFromFile(fileUri: vscode.Uri): Promise<void> {
+  async createScratchFileFromFile(fileUri: vscode.Uri, parentFolderPath?: string): Promise<void> {
     try {
       // Read the file content
       const fileContent = await vscode.workspace.fs.readFile(fileUri);
@@ -63,7 +63,7 @@ export class ScratchpadService {
       const nameWithoutExt = path.basename(originalFileName, extension);
       const suggestedName = `${nameWithoutExt}_scratch${extension}`;
       
-      await this.createScratchFile(content, suggestedName);
+      await this.createScratchFile(content, suggestedName, parentFolderPath);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to read file: ${error}`);
     }
@@ -72,7 +72,10 @@ export class ScratchpadService {
   /**
    * Create a new scratch file
    */
-  async createScratchFile(initialContent?: string, suggestedName?: string): Promise<void> {
+  async createScratchFile(initialContent?: string, suggestedName?: string, parentFolderPath?: string): Promise<void> {
+    // Determine the target directory
+    const targetDir = parentFolderPath || this.scratchpadDir;
+    
     // Ask for a name with extension
     const defaultName = suggestedName || this.generateDefaultName();
     const fileName = await vscode.window.showInputBox({
@@ -86,7 +89,7 @@ export class ScratchpadService {
         if (!value.includes(".")) {
           return "Please include a file extension (e.g., .txt, .js, .md)";
         }
-        const fullPath = path.join(this.scratchpadDir, value);
+        const fullPath = path.join(targetDir, value);
         if (fs.existsSync(fullPath)) {
           return "A file with this name already exists";
         }
@@ -102,7 +105,7 @@ export class ScratchpadService {
     const extension = path.extname(fileName).slice(1); // Remove the dot
 
     // Create the file
-    const fullPath = path.join(this.scratchpadDir, fileName);
+    const fullPath = path.join(targetDir, fileName);
     let content: string;
 
     if (initialContent !== undefined) {
@@ -278,5 +281,99 @@ export class ScratchpadService {
     };
 
     return commentMap[extension.toLowerCase()] || "//";
+  }
+
+  async createScratchFolder(parentFolderPath?: string): Promise<void> {
+    // Determine the target directory
+    const targetDir = parentFolderPath || this.scratchpadDir;
+    
+    const folderName = await vscode.window.showInputBox({
+      prompt: "Enter a name for your new folder",
+      validateInput: (value) => {
+        if (!value) {
+          return "Folder name cannot be empty";
+        }
+        if (value.includes('.')) {
+          return "Folder names should not contain dots";
+        }
+        const fullPath = path.join(targetDir, value);
+        if (fs.existsSync(fullPath)) {
+          return "A folder with this name already exists";
+        }
+        return null;
+      },
+    });
+
+    if (!folderName) {
+      return; // User cancelled
+    }
+
+    const fullPath = path.join(targetDir, folderName);
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+
+  /**
+   * Delete a scratch folder and all its contents
+   */
+  async deleteScratchFolder(folderPath: string, folderName: string): Promise<boolean> {
+    const confirmation = await vscode.window.showWarningMessage(
+      `Are you sure you want to delete folder '${folderName}' and all its contents?`,
+      { modal: true },
+      "Delete"  
+    );
+
+    if (confirmation === "Delete") {
+      try {
+        // Recursively delete the folder and all its contents
+        fs.rmSync(folderPath, { recursive: true, force: true });
+        return true;
+      } catch (error) {
+        console.error("Failed to delete scratch folder:", error);
+        vscode.window.showErrorMessage(
+          `Failed to delete scratch folder: ${error}`
+        );
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Rename a scratch folder
+   */
+  async renameScratchFolder(folderPath: string, folderName: string): Promise<boolean> {
+    const newName = await vscode.window.showInputBox({
+      prompt: "Enter a new name for your folder",
+      value: folderName,
+      validateInput: (value) => {
+        if (!value) {
+          return "Folder name cannot be empty";
+        }
+        if (value.includes('.')) {
+          return "Folder names should not contain dots";
+        }
+        const newPath = path.join(path.dirname(folderPath), value);
+        if (fs.existsSync(newPath) && newPath !== folderPath) {
+          return "A folder with this name already exists";
+        }
+        return null;
+      },
+    });
+
+    if (!newName) {
+      return false; // User cancelled
+    }
+
+    const newPath = path.join(path.dirname(folderPath), newName);
+
+    try {
+      fs.renameSync(folderPath, newPath);
+      return true;
+    } catch (error) {
+      console.error("Failed to rename scratch folder:", error);
+      vscode.window.showErrorMessage(`Failed to rename scratch folder: ${error}`);
+      return false;
+    }
   }
 }
