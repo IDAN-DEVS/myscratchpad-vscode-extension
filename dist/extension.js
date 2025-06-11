@@ -70,21 +70,65 @@ function activate(context) {
     // Register tree data providers
     const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
         treeDataProvider: globalScratchpadProvider,
-        showCollapseAll: false,
+        showCollapseAll: true,
+        canSelectMany: true,
+        dragAndDropController: globalScratchpadProvider,
     });
     const workspaceTreeView = vscode.window.createTreeView("workspaceScratchpadExplorer", {
         treeDataProvider: workspaceScratchpadProvider,
-        showCollapseAll: false,
+        showCollapseAll: true,
+        canSelectMany: true,
+        dragAndDropController: workspaceScratchpadProvider,
+    });
+    // Track current selections
+    let currentGlobalSelection = undefined;
+    let currentWorkspaceSelection = undefined;
+    // Helper function to get base path from selected item
+    function getBasePath(selectedItem) {
+        if (!selectedItem)
+            return undefined;
+        // If it's a folder, use its path
+        if (selectedItem.scratchFolder) {
+            return selectedItem.scratchFolder.path;
+        }
+        // If it's a file, use its parent directory
+        if (selectedItem.scratchFile) {
+            return path.dirname(selectedItem.scratchFile.path);
+        }
+        return undefined;
+    }
+    // Listen for selection changes in global tree view
+    globalTreeView.onDidChangeSelection(e => {
+        currentGlobalSelection = e.selection[0];
+    });
+    // Listen for selection changes in workspace tree view
+    workspaceTreeView.onDidChangeSelection(e => {
+        currentWorkspaceSelection = e.selection[0];
     });
     // Register commands
-    context.subscriptions.push(vscode.commands.registerCommand("myscratchpad.createScratchFile", async () => {
-        await globalScratchpadService.createScratchFile();
+    context.subscriptions.push(vscode.commands.registerCommand("myscratchpad.createScratchFile", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await globalScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         globalScratchpadProvider.refresh();
-    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFile", async () => {
-        await workspaceScratchpadService.createScratchFile();
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFile", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        await workspaceScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
     }), vscode.commands.registerCommand("myscratchpad.deleteScratchFile", async (item) => {
         const treeItem = item;
+        // Handle file deletion
         if (treeItem?.scratchFile) {
             // Determine which service to use based on file path
             const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
@@ -102,8 +146,27 @@ function activate(context) {
                 provider.refresh();
             }
         }
+        // Handle folder deletion
+        else if (treeItem?.scratchFolder) {
+            // Determine which service to use based on folder path
+            const isWorkspaceFolder = treeItem.scratchFolder.path.includes("workspaceScratchFiles");
+            const { service, provider } = isWorkspaceFolder
+                ? {
+                    service: workspaceScratchpadService,
+                    provider: workspaceScratchpadProvider,
+                }
+                : {
+                    service: globalScratchpadService,
+                    provider: globalScratchpadProvider,
+                };
+            const success = await service.deleteScratchFolder(treeItem.scratchFolder.path, treeItem.scratchFolder.name);
+            if (success) {
+                provider.refresh();
+            }
+        }
     }), vscode.commands.registerCommand("myscratchpad.renameScratchFile", async (item) => {
         const treeItem = item;
+        // Handle file renaming
         if (treeItem?.scratchFile) {
             // Determine which service to use based on file path
             const isWorkspaceFile = treeItem.scratchFile.path.includes("workspaceScratchFiles");
@@ -121,24 +184,126 @@ function activate(context) {
                 provider.refresh();
             }
         }
+        // Handle folder renaming
+        else if (treeItem?.scratchFolder) {
+            // Determine which service to use based on folder path
+            const isWorkspaceFolder = treeItem.scratchFolder.path.includes("workspaceScratchFiles");
+            const { service, provider } = isWorkspaceFolder
+                ? {
+                    service: workspaceScratchpadService,
+                    provider: workspaceScratchpadProvider,
+                }
+                : {
+                    service: globalScratchpadService,
+                    provider: globalScratchpadProvider,
+                };
+            const success = await service.renameScratchFolder(treeItem.scratchFolder.path, treeItem.scratchFolder.name);
+            if (success) {
+                provider.refresh();
+            }
+        }
     }), vscode.commands.registerCommand("myscratchpad.refreshScratchpad", () => {
         globalScratchpadProvider.refresh();
     }), vscode.commands.registerCommand("myscratchpad.refreshWorkspaceScratchpad", () => {
         workspaceScratchpadProvider.refresh();
-    }), vscode.commands.registerCommand("myscratchpad.createScratchFileFromSelection", async () => {
-        await globalScratchpadService.createScratchFileFromSelection();
+    }), vscode.commands.registerCommand("myscratchpad.createScratchFileFromSelection", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await globalScratchpadService.createScratchFileFromSelection(parentFolderPath);
         globalScratchpadProvider.refresh();
-    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFileFromSelection", async () => {
-        await workspaceScratchpadService.createScratchFileFromSelection();
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFileFromSelection", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        await workspaceScratchpadService.createScratchFileFromSelection(parentFolderPath);
         workspaceScratchpadProvider.refresh();
-    }), vscode.commands.registerCommand("myscratchpad.createScratchFileFromFile", async (fileUri) => {
-        await globalScratchpadService.createScratchFileFromFile(fileUri);
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.createScratchFileFromFile", async (fileUri, item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await globalScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         globalScratchpadProvider.refresh();
-    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFileFromFile", async (fileUri) => {
-        await workspaceScratchpadService.createScratchFileFromFile(fileUri);
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFileFromFile", async (fileUri, item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await workspaceScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+            await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
     }), vscode.commands.registerCommand("myscratchpad.addFileToCodyAi", async (fileUri) => {
         await codyService_1.codyService.executeMentionFileCommand(fileUri);
+    }), vscode.commands.registerCommand("myscratchpad.createScratchFolder", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await globalScratchpadService.createScratchFolder(parentFolderPath);
+        globalScratchpadProvider.refresh();
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+            await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.createWorkspaceScratchFolder", async (item) => {
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        await workspaceScratchpadService.createScratchFolder(parentFolderPath);
+        workspaceScratchpadProvider.refresh();
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+            await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
+    }), vscode.commands.registerCommand("myscratchpad.revealInFinder", async (item) => {
+        if (!item)
+            return;
+        let targetPath;
+        // Get the path based on item type
+        if (item.scratchFile) {
+            targetPath = item.scratchFile.path;
+        }
+        else if (item.scratchFolder) {
+            targetPath = item.scratchFolder.path;
+        }
+        if (targetPath) {
+            // Use VS Code's built-in command to reveal in file explorer
+            await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(targetPath));
+        }
+    }), vscode.commands.registerCommand("myscratchpad.openInTerminal", async (item) => {
+        if (!item)
+            return;
+        let targetPath;
+        // Get the directory path based on item type
+        if (item.scratchFile) {
+            // For files, open terminal in the parent directory
+            targetPath = path.dirname(item.scratchFile.path);
+        }
+        else if (item.scratchFolder) {
+            // For folders, open terminal in the folder itself
+            targetPath = item.scratchFolder.path;
+        }
+        if (targetPath) {
+            // Create a new terminal and change to the target directory
+            const terminal = vscode.window.createTerminal({
+                name: 'Scratchpad Terminal',
+                cwd: targetPath
+            });
+            terminal.show();
+        }
     }), globalTreeView, workspaceTreeView);
 }
 // This method is called when your extension is deactivated
@@ -196,7 +361,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ScratchpadProvider = exports.ScratchpadTreeItem = void 0;
+exports.ScratchpadProvider = exports.ScratchpadFolderItem = exports.ScratchpadTreeItem = void 0;
 const vscode = __importStar(__webpack_require__(1));
 const path = __importStar(__webpack_require__(2));
 const fs = __importStar(__webpack_require__(4));
@@ -227,14 +392,38 @@ class ScratchpadTreeItem extends vscode.TreeItem {
     }
 }
 exports.ScratchpadTreeItem = ScratchpadTreeItem;
+class ScratchpadFolderItem extends vscode.TreeItem {
+    scratchFolder;
+    collapsibleState;
+    constructor(scratchFolder, collapsibleState) {
+        super(scratchFolder.name, collapsibleState);
+        this.scratchFolder = scratchFolder;
+        this.collapsibleState = collapsibleState;
+        // Set folder icon
+        this.iconPath = vscode.ThemeIcon.Folder;
+        // Contextual data for commands
+        this.contextValue = "scratchFolder";
+        // Set tooltip
+        const created = new Date(scratchFolder.created).toLocaleString();
+        const modified = new Date(scratchFolder.lastModified).toLocaleString();
+        this.tooltip = `${scratchFolder.name}\nFolder\nCreated: ${created}\nLast Modified: ${modified}`;
+    }
+}
+exports.ScratchpadFolderItem = ScratchpadFolderItem;
 class ScratchpadProvider {
     scratchpadDir;
     scope;
+    // Drag and drop mime types - will be set in constructor
+    dropMimeTypes;
+    dragMimeTypes;
     _onDidChangeTreeData = new vscode.EventEmitter();
     onDidChangeTreeData = this._onDidChangeTreeData.event;
     constructor(scratchpadDir, scope = "global") {
         this.scratchpadDir = scratchpadDir;
         this.scope = scope;
+        // Set drag and drop mime types based on scope
+        this.dropMimeTypes = [`application/vnd.code.tree.scratchpad.${this.scope}`];
+        this.dragMimeTypes = [`application/vnd.code.tree.scratchpad.${this.scope}`];
         // Ensure the scratchpad directory exists
         if (!fs.existsSync(scratchpadDir)) {
             fs.mkdirSync(scratchpadDir, { recursive: true });
@@ -243,18 +432,98 @@ class ScratchpadProvider {
     refresh() {
         this._onDidChangeTreeData.fire();
     }
+    /**
+     * Expand a folder by its path
+     */
+    async expandFolder(folderPath, treeView) {
+        // Find the folder item that matches the path
+        const allItems = await this.getScratchItems();
+        const folderItem = this.findFolderByPath(allItems, folderPath);
+        if (folderItem) {
+            // Reveal and expand the folder
+            await treeView.reveal(folderItem, { expand: true, focus: false, select: false });
+        }
+    }
+    findFolderByPath(items, targetPath) {
+        for (const item of items) {
+            if (item instanceof ScratchpadFolderItem) {
+                if (item.scratchFolder.path === targetPath) {
+                    return item;
+                }
+                // Also check if this is a relative path match within our scratchpad directory
+                const relativePath = path.relative(this.scratchpadDir, targetPath);
+                const itemRelativePath = path.relative(this.scratchpadDir, item.scratchFolder.path);
+                if (relativePath === itemRelativePath) {
+                    return item;
+                }
+            }
+        }
+        return undefined;
+    }
     getTreeItem(element) {
         return element;
     }
     async getChildren(element) {
-        if (element) {
-            return []; // No children for leaf nodes
+        if (!element) {
+            // Root level - get all scratch items from all IDE directories
+            return this.getScratchItems();
+        }
+        else if (element instanceof ScratchpadFolderItem) {
+            // Get children of a folder
+            return this.getScratchItemsFromDirectory(element.scratchFolder.path);
         }
         else {
-            return this.getScratchFiles();
+            // Files have no children
+            return [];
         }
     }
-    getScratchFiles() {
+    getParent(element) {
+        if (element instanceof ScratchpadFolderItem) {
+            // Check if this folder is at root level
+            const parentPath = path.dirname(element.scratchFolder.path);
+            if (parentPath === this.scratchpadDir || this.isAtRootLevel(element.scratchFolder.path)) {
+                return undefined; // Root level folder
+            }
+            // Find parent folder
+            return this.findParentFolder(element.scratchFolder.path);
+        }
+        else {
+            // For files, find the parent folder
+            const parentPath = path.dirname(element.scratchFile.path);
+            if (parentPath === this.scratchpadDir || this.isAtRootLevel(element.scratchFile.path)) {
+                return undefined; // Root level file
+            }
+            return this.findParentFolder(element.scratchFile.path);
+        }
+    }
+    isAtRootLevel(itemPath) {
+        // Check if the item is at the root level by comparing directory levels
+        const relativePath = path.relative(this.scratchpadDir, itemPath);
+        const pathSegments = relativePath.split(path.sep).filter(segment => segment !== '');
+        // If there's only one segment (the item name), it's at root level
+        return pathSegments.length <= 1;
+    }
+    findParentFolder(itemPath) {
+        const parentPath = path.dirname(itemPath);
+        // Try to find the parent folder in our current items
+        // Note: This is a simplified approach. In a real implementation, you might need
+        // to cache the tree structure or implement a more sophisticated lookup
+        const parentName = path.basename(parentPath);
+        // Create a mock parent folder item for the reveal functionality
+        // This works because reveal only needs the path information
+        if (fs.existsSync(parentPath) && fs.statSync(parentPath).isDirectory()) {
+            const stats = fs.statSync(parentPath);
+            const scratchFolder = {
+                name: parentName,
+                path: parentPath,
+                created: stats.birthtime.getTime(),
+                lastModified: stats.mtime.getTime(),
+            };
+            return new ScratchpadFolderItem(scratchFolder, vscode.TreeItemCollapsibleState.Collapsed);
+        }
+        return undefined;
+    }
+    getScratchItems() {
         try {
             const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
             const splitPart1 = this.scratchpadDir.split("/User/")[0];
@@ -265,46 +534,184 @@ class ScratchpadProvider {
                 const newPart1 = splitPart1.split("/").slice(0, -1).join("/");
                 return path.join(newPart1, ideName, "User", splitPart2);
             });
-            // Get all files from all IDE paths
-            const allFiles = [];
-            const uniqueFileNames = new Set();
+            // Get all items from all IDE paths
+            const allItems = [];
+            const uniqueItemNames = new Set();
             idePaths.forEach((idePath) => {
                 if (fs.existsSync(idePath)) {
-                    const ideFiles = fs
-                        .readdirSync(idePath)
-                        .map((file) => path.join(idePath, file))
-                        .filter((filePath) => !fs.statSync(filePath).isDirectory());
-                    // Add files, filtering by unique file names
-                    ideFiles.forEach((filePath) => {
-                        const fileName = path.basename(filePath);
-                        if (!uniqueFileNames.has(fileName)) {
-                            uniqueFileNames.add(fileName);
-                            allFiles.push(filePath);
+                    const ideItems = this.getItemsFromDirectory(idePath);
+                    // Add items, filtering by unique item names
+                    ideItems.forEach((item) => {
+                        const itemName = item instanceof ScratchpadTreeItem
+                            ? item.scratchFile.name
+                            : item.scratchFolder.name;
+                        if (!uniqueItemNames.has(itemName)) {
+                            uniqueItemNames.add(itemName);
+                            allItems.push(item);
                         }
                     });
                 }
             });
-            // Process all found files
-            return allFiles
-                .map((filePath) => {
-                const stats = fs.statSync(filePath);
-                const fileName = path.basename(filePath);
-                const extension = path.extname(fileName).slice(1); // Remove the dot
-                const name = fileName;
-                const scratchFile = {
-                    name,
-                    extension,
-                    path: filePath,
-                    created: stats.birthtime.getTime(),
-                    lastModified: stats.mtime.getTime(),
-                };
-                return new ScratchpadTreeItem(scratchFile, vscode.TreeItemCollapsibleState.None);
-            })
-                .sort((a, b) => b.scratchFile.lastModified - a.scratchFile.lastModified); // Sort by last modified (newest first)
+            return this.sortItems(allItems);
         }
         catch (error) {
             console.error("Error reading scratchpad directory:", error);
             return [];
+        }
+    }
+    getScratchItemsFromDirectory(dirPath) {
+        try {
+            const items = this.getItemsFromDirectory(dirPath);
+            return this.sortItems(items);
+        }
+        catch (error) {
+            console.error("Error reading directory:", error);
+            return [];
+        }
+    }
+    getItemsFromDirectory(dirPath) {
+        if (!fs.existsSync(dirPath)) {
+            return [];
+        }
+        const items = [];
+        const dirEntries = fs.readdirSync(dirPath);
+        dirEntries.forEach((entry) => {
+            const fullPath = path.join(dirPath, entry);
+            const stats = fs.statSync(fullPath);
+            if (stats.isDirectory()) {
+                // Create folder item
+                const scratchFolder = {
+                    name: entry,
+                    path: fullPath,
+                    created: stats.birthtime.getTime(),
+                    lastModified: stats.mtime.getTime(),
+                };
+                items.push(new ScratchpadFolderItem(scratchFolder, vscode.TreeItemCollapsibleState.Collapsed));
+            }
+            else {
+                // Create file item
+                const extension = path.extname(entry).slice(1); // Remove the dot
+                const scratchFile = {
+                    name: entry,
+                    extension,
+                    path: fullPath,
+                    created: stats.birthtime.getTime(),
+                    lastModified: stats.mtime.getTime(),
+                };
+                items.push(new ScratchpadTreeItem(scratchFile, vscode.TreeItemCollapsibleState.None));
+            }
+        });
+        return items;
+    }
+    sortItems(items) {
+        return items.sort((a, b) => {
+            const aIsFolder = a instanceof ScratchpadFolderItem;
+            const bIsFolder = b instanceof ScratchpadFolderItem;
+            // Sort folders first, then files
+            if (aIsFolder && !bIsFolder) {
+                return -1;
+            }
+            if (!aIsFolder && bIsFolder) {
+                return 1;
+            }
+            if (aIsFolder) {
+                // both folders - sort alphabetically
+                return a.label.localeCompare(b.label);
+            }
+            else {
+                // both files
+                return b.scratchFile.lastModified - a.scratchFile.lastModified;
+            }
+        });
+    }
+    // Drag and drop implementation
+    async handleDrag(source, treeDataTransfer) {
+        // Store the dragged items in the data transfer
+        const draggedItems = source.map(item => ({
+            isFolder: item instanceof ScratchpadFolderItem,
+            path: item instanceof ScratchpadFolderItem ? item.scratchFolder.path : item.scratchFile.path,
+            name: item instanceof ScratchpadFolderItem ? item.scratchFolder.name : item.scratchFile.name
+        }));
+        treeDataTransfer.set(this.dragMimeTypes[0], new vscode.DataTransferItem(draggedItems));
+    }
+    async handleDrop(target, sources) {
+        const transferItem = sources.get(this.dropMimeTypes[0]);
+        if (!transferItem) {
+            return;
+        }
+        const draggedItems = transferItem.value;
+        // Determine target directory - always use the main scratchpad directory structure
+        let targetDir;
+        if (!target) {
+            // Dropped on empty space - move to root
+            targetDir = this.scratchpadDir;
+        }
+        else if (target instanceof ScratchpadFolderItem) {
+            // Dropped on folder - need to find the corresponding folder in our scratchpad directory
+            const folderName = target.scratchFolder.name;
+            targetDir = path.join(this.scratchpadDir, folderName);
+        }
+        else {
+            // Dropped on file - move to the same directory as the file would be in our scratchpad directory
+            const fileDir = path.dirname(target.scratchFile.path);
+            // Extract the relative path from the IDE-specific directory structure
+            const relativePath = this.getRelativePathFromScratchpadDir(fileDir);
+            targetDir = path.join(this.scratchpadDir, relativePath);
+        }
+        // Move each dragged item to the main scratchpad directory
+        for (const draggedItem of draggedItems) {
+            await this.moveItem(draggedItem.path, draggedItem.name, targetDir, draggedItem.isFolder);
+        }
+        // Refresh the tree view
+        this.refresh();
+    }
+    getRelativePathFromScratchpadDir(fullPath) {
+        // Extract the relative path by finding the common structure
+        // This handles the cross-IDE directory aggregation
+        const parts = fullPath.split(path.sep);
+        const scratchpadDirParts = this.scratchpadDir.split(path.sep);
+        // Find where the paths diverge and get the relative portion
+        let relativeParts = [];
+        let foundScratchFiles = false;
+        for (let i = 0; i < parts.length; i++) {
+            if (parts[i] === 'scratchFiles' || parts[i] === 'workspaceScratchFiles') {
+                foundScratchFiles = true;
+                // Skip the scratchFiles part and get everything after
+                relativeParts = parts.slice(i + 1);
+                break;
+            }
+        }
+        return foundScratchFiles ? relativeParts.join(path.sep) : '';
+    }
+    async moveItem(sourcePath, itemName, targetDir, isFolder) {
+        try {
+            const targetPath = path.join(targetDir, itemName);
+            // Check if target already exists
+            if (fs.existsSync(targetPath)) {
+                vscode.window.showErrorMessage(`Cannot move ${itemName}: An item with this name already exists in the target location.`);
+                return;
+            }
+            // Check if we're trying to move an item into itself or its subdirectory
+            if (isFolder && targetPath.startsWith(sourcePath + path.sep)) {
+                vscode.window.showErrorMessage(`Cannot move folder into itself or its subdirectory.`);
+                return;
+            }
+            // Check if source and target are the same
+            if (sourcePath === targetPath) {
+                return; // No need to move
+            }
+            // Ensure target directory exists
+            if (!fs.existsSync(targetDir)) {
+                fs.mkdirSync(targetDir, { recursive: true });
+            }
+            // Move the item
+            fs.renameSync(sourcePath, targetPath);
+            const itemType = isFolder ? 'folder' : 'file';
+            vscode.window.showInformationMessage(`Moved ${itemType} "${itemName}" successfully.`);
+        }
+        catch (error) {
+            console.error(`Failed to move item:`, error);
+            vscode.window.showErrorMessage(`Failed to move ${itemName}: ${error}`);
         }
     }
 }
@@ -480,7 +887,7 @@ class ScratchpadService {
     /**
      * Create a new scratch file from selected text
      */
-    async createScratchFileFromSelection() {
+    async createScratchFileFromSelection(parentFolderPath) {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage("No active editor found");
@@ -500,12 +907,12 @@ class ScratchpadService {
             const nameWithoutExt = path.basename(originalFileName, extension);
             suggestedName = `${nameWithoutExt}_scratch${extension}`;
         }
-        await this.createScratchFile(selectedText, suggestedName);
+        await this.createScratchFile(selectedText, suggestedName, parentFolderPath);
     }
     /**
      * Create a new scratch file from an existing file
      */
-    async createScratchFileFromFile(fileUri) {
+    async createScratchFileFromFile(fileUri, parentFolderPath) {
         try {
             // Read the file content
             const fileContent = await vscode.workspace.fs.readFile(fileUri);
@@ -515,7 +922,7 @@ class ScratchpadService {
             const extension = path.extname(originalFileName);
             const nameWithoutExt = path.basename(originalFileName, extension);
             const suggestedName = `${nameWithoutExt}_scratch${extension}`;
-            await this.createScratchFile(content, suggestedName);
+            await this.createScratchFile(content, suggestedName, parentFolderPath);
         }
         catch (error) {
             vscode.window.showErrorMessage(`Failed to read file: ${error}`);
@@ -524,7 +931,9 @@ class ScratchpadService {
     /**
      * Create a new scratch file
      */
-    async createScratchFile(initialContent, suggestedName) {
+    async createScratchFile(initialContent, suggestedName, parentFolderPath) {
+        // Determine the target directory
+        const targetDir = parentFolderPath || this.scratchpadDir;
         // Ask for a name with extension
         const defaultName = suggestedName || this.generateDefaultName();
         const fileName = await vscode.window.showInputBox({
@@ -537,7 +946,7 @@ class ScratchpadService {
                 if (!value.includes(".")) {
                     return "Please include a file extension (e.g., .txt, .js, .md)";
                 }
-                const fullPath = path.join(this.scratchpadDir, value);
+                const fullPath = path.join(targetDir, value);
                 if (fs.existsSync(fullPath)) {
                     return "A file with this name already exists";
                 }
@@ -550,7 +959,7 @@ class ScratchpadService {
         // Extract extension from filename
         const extension = path.extname(fileName).slice(1); // Remove the dot
         // Create the file
-        const fullPath = path.join(this.scratchpadDir, fileName);
+        const fullPath = path.join(targetDir, fileName);
         let content;
         if (initialContent !== undefined) {
             content = initialContent;
@@ -692,6 +1101,85 @@ class ScratchpadService {
             ps1: "#",
         };
         return commentMap[extension.toLowerCase()] || "//";
+    }
+    async createScratchFolder(parentFolderPath) {
+        // Determine the target directory
+        const targetDir = parentFolderPath || this.scratchpadDir;
+        const folderName = await vscode.window.showInputBox({
+            prompt: "Enter a name for your new folder",
+            validateInput: (value) => {
+                if (!value) {
+                    return "Folder name cannot be empty";
+                }
+                if (value.includes('.')) {
+                    return "Folder names should not contain dots";
+                }
+                const fullPath = path.join(targetDir, value);
+                if (fs.existsSync(fullPath)) {
+                    return "A folder with this name already exists";
+                }
+                return null;
+            },
+        });
+        if (!folderName) {
+            return; // User cancelled
+        }
+        const fullPath = path.join(targetDir, folderName);
+        fs.mkdirSync(fullPath, { recursive: true });
+    }
+    /**
+     * Delete a scratch folder and all its contents
+     */
+    async deleteScratchFolder(folderPath, folderName) {
+        const confirmation = await vscode.window.showWarningMessage(`Are you sure you want to delete folder '${folderName}' and all its contents?`, { modal: true }, "Delete");
+        if (confirmation === "Delete") {
+            try {
+                // Recursively delete the folder and all its contents
+                fs.rmSync(folderPath, { recursive: true, force: true });
+                return true;
+            }
+            catch (error) {
+                console.error("Failed to delete scratch folder:", error);
+                vscode.window.showErrorMessage(`Failed to delete scratch folder: ${error}`);
+                return false;
+            }
+        }
+        return false;
+    }
+    /**
+     * Rename a scratch folder
+     */
+    async renameScratchFolder(folderPath, folderName) {
+        const newName = await vscode.window.showInputBox({
+            prompt: "Enter a new name for your folder",
+            value: folderName,
+            validateInput: (value) => {
+                if (!value) {
+                    return "Folder name cannot be empty";
+                }
+                if (value.includes('.')) {
+                    return "Folder names should not contain dots";
+                }
+                const newPath = path.join(path.dirname(folderPath), value);
+                if (fs.existsSync(newPath) && newPath !== folderPath) {
+                    return "A folder with this name already exists";
+                }
+                return null;
+            },
+        });
+        if (!newName) {
+            return false; // User cancelled
+        }
+        const newPath = path.join(path.dirname(folderPath), newName);
+        try {
+            fs.renameSync(folderPath, newPath);
+            return true;
+        }
+        catch (error) {
+            console.error("Failed to rename scratch folder:", error);
+            vscode.window.showErrorMessage(`Failed to rename scratch folder: ${error}`);
+            return false;
+        }
     }
 }
 exports.ScratchpadService = ScratchpadService;

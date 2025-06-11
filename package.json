@@ -10,11 +10,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension.git"
+    "url": "https://github.com/lirancr/myscratchpad-vscode-extension.git"
   },
-  "homepage": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/blob/main/README.md",
+  "homepage": "https://github.com/lirancr/myscratchpad-vscode-extension/blob/main/README.md",
   "bugs": {
-    "url": "https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/issues"
+    "url": "https://github.com/lirancr/myscratchpad-vscode-extension/issues"
   },
   "keywords": [
     "scratchpad",
