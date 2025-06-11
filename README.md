@@ -5,6 +5,15 @@ A powerful scratchpad extension for Visual Studio Code that provides both global
 <br/>
 <video src="https://pub-db4f9d2ca78f4d78a89b8e54dca08c9f.r2.dev/installation%20and%20usage%20myscratchpad%20demo%20v1.mp4" autoplay loop muted playsinline></video>
 
+## Fork notes
+
+- Added nested tree structure
+- Added right click actions
+
+### Installation notes:
+1. Download the latest release from [here](https://github.com/lirancr/myscratchpad-vscode-extension/tree/main/releases)
+2. `cursor --install-extension {fileName}.vsix` 
+
 ## Features
 
 ### 🌍 Dual Scratchpad System
