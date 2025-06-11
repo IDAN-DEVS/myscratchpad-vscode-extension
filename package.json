@@ -70,7 +70,7 @@
       },
       {
         "command": "myscratchpad.renameScratchFile",
-        "title": "Rename Scratch File",
+        "title": "Rename",
         "icon": "$(edit)"
       },
       {

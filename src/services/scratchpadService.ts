@@ -332,4 +332,42 @@ export class ScratchpadService {
 
     return false;
   }
+
+  /**
+   * Rename a scratch folder
+   */
+  async renameScratchFolder(folderPath: string, folderName: string): Promise<boolean> {
+    const newName = await vscode.window.showInputBox({
+      prompt: "Enter a new name for your folder",
+      value: folderName,
+      validateInput: (value) => {
+        if (!value) {
+          return "Folder name cannot be empty";
+        }
+        if (value.includes('.')) {
+          return "Folder names should not contain dots";
+        }
+        const newPath = path.join(path.dirname(folderPath), value);
+        if (fs.existsSync(newPath) && newPath !== folderPath) {
+          return "A folder with this name already exists";
+        }
+        return null;
+      },
+    });
+
+    if (!newName) {
+      return false; // User cancelled
+    }
+
+    const newPath = path.join(path.dirname(folderPath), newName);
+
+    try {
+      fs.renameSync(folderPath, newPath);
+      return true;
+    } catch (error) {
+      console.error("Failed to rename scratch folder:", error);
+      vscode.window.showErrorMessage(`Failed to rename scratch folder: ${error}`);
+      return false;
+    }
+  }
 }

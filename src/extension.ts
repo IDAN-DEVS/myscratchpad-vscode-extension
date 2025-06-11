@@ -142,6 +142,8 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.renameScratchFile",
       async (item: ScratchpadProvider) => {
         const treeItem = item as any;
+        
+        // Handle file renaming
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
           const isWorkspaceFile = treeItem.scratchFile.path.includes(
@@ -159,6 +161,30 @@ export function activate(context: vscode.ExtensionContext) {
 
           const success = await service.renameScratchFile(
             treeItem.scratchFile as IScratchFile
+          );
+          if (success) {
+            provider.refresh();
+          }
+        }
+        // Handle folder renaming
+        else if (treeItem?.scratchFolder) {
+          // Determine which service to use based on folder path
+          const isWorkspaceFolder = treeItem.scratchFolder.path.includes(
+            "workspaceScratchFiles"
+          );
+          const { service, provider } = isWorkspaceFolder
+            ? {
+                service: workspaceScratchpadService,
+                provider: workspaceScratchpadProvider,
+              }
+            : {
+                service: globalScratchpadService,
+                provider: globalScratchpadProvider,
+              };
+
+          const success = await service.renameScratchFolder(
+            treeItem.scratchFolder.path,
+            treeItem.scratchFolder.name
           );
           if (success) {
             provider.refresh();
