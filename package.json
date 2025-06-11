@@ -173,6 +173,16 @@
           "group": "inline"
         },
         {
+          "command": "myscratchpad.createScratchFile",
+          "when": "view == scratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
+          "command": "myscratchpad.createScratchFolder",
+          "when": "view == scratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
           "command": "myscratchpad.deleteScratchFile",
           "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
@@ -181,6 +191,16 @@
           "command": "myscratchpad.renameScratchFile",
           "when": "view == workspaceScratchpadExplorer",
           "group": "inline"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFile",
+          "when": "view == workspaceScratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFolder",
+          "when": "view == workspaceScratchpadExplorer && viewItem == scratchFolder",
+          "group": "context"
         },
         {
           "command": "myscratchpad.addFileToCodyAi",

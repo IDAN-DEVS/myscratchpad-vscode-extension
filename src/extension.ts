@@ -69,16 +69,20 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFile",
-      async () => {
-        await globalScratchpadService.createScratchFile();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await globalScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         globalScratchpadProvider.refresh();
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFile",
-      async () => {
-        await workspaceScratchpadService.createScratchFile();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await workspaceScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         workspaceScratchpadProvider.refresh();
       }
     ),
@@ -206,32 +210,40 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromSelection",
-      async () => {
-        await globalScratchpadService.createScratchFileFromSelection();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await globalScratchpadService.createScratchFileFromSelection(parentFolderPath);
         globalScratchpadProvider.refresh();
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromSelection",
-      async () => {
-        await workspaceScratchpadService.createScratchFileFromSelection();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await workspaceScratchpadService.createScratchFileFromSelection(parentFolderPath);
         workspaceScratchpadProvider.refresh();
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromFile",
-      async (fileUri: vscode.Uri) => {
-        await globalScratchpadService.createScratchFileFromFile(fileUri);
+      async (fileUri: vscode.Uri, item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await globalScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         globalScratchpadProvider.refresh();
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromFile",
-      async (fileUri: vscode.Uri) => {
-        await workspaceScratchpadService.createScratchFileFromFile(fileUri);
+      async (fileUri: vscode.Uri, item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await workspaceScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         workspaceScratchpadProvider.refresh();
       }
     ),
@@ -245,16 +257,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFolder",
-      async () => {
-        await globalScratchpadService.createScratchFolder();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await globalScratchpadService.createScratchFolder(parentFolderPath);
         globalScratchpadProvider.refresh();
       }
     ),
 
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFolder", 
-      async () => {
-        await workspaceScratchpadService.createScratchFolder();
+      async (item?: any) => {
+        // Get parent folder path if a folder is selected
+        const parentFolderPath = item?.scratchFolder?.path;
+        await workspaceScratchpadService.createScratchFolder(parentFolderPath);
         workspaceScratchpadProvider.refresh();
       }
     ),
