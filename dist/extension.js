@@ -498,7 +498,7 @@ class ScratchpadService {
         try {
             // Read the file content
             const fileContent = await vscode.workspace.fs.readFile(fileUri);
-            const content = Buffer.from(fileContent).toString('utf8');
+            const content = Buffer.from(fileContent).toString("utf8");
             // Generate suggested filename based on original file
             const originalFileName = path.basename(fileUri.fsPath);
             const extension = path.extname(originalFileName);

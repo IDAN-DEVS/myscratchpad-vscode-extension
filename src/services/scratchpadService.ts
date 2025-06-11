@@ -1,11 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import {
-  FileTypeEnum,
-  IScratchFile,
-  fileTypeLabels,
-} from "../models/scratchFile";
+import { IScratchFile } from "../models/scratchFile";
 
 export class ScratchpadService {
   constructor(
@@ -55,14 +51,14 @@ export class ScratchpadService {
     try {
       // Read the file content
       const fileContent = await vscode.workspace.fs.readFile(fileUri);
-      const content = Buffer.from(fileContent).toString('utf8');
-      
+      const content = Buffer.from(fileContent).toString("utf8");
+
       // Generate suggested filename based on original file
       const originalFileName = path.basename(fileUri.fsPath);
       const extension = path.extname(originalFileName);
       const nameWithoutExt = path.basename(originalFileName, extension);
       const suggestedName = `${nameWithoutExt}_scratch${extension}`;
-      
+
       await this.createScratchFile(content, suggestedName);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to read file: ${error}`);
@@ -72,7 +68,10 @@ export class ScratchpadService {
   /**
    * Create a new scratch file
    */
-  async createScratchFile(initialContent?: string, suggestedName?: string): Promise<void> {
+  async createScratchFile(
+    initialContent?: string,
+    suggestedName?: string
+  ): Promise<void> {
     // Ask for a name with extension
     const defaultName = suggestedName || this.generateDefaultName();
     const fileName = await vscode.window.showInputBox({
