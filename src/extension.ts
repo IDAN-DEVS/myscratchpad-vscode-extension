@@ -78,6 +78,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await globalScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
@@ -88,6 +93,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await workspaceScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
@@ -219,6 +229,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await globalScratchpadService.createScratchFileFromSelection(parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
@@ -229,6 +244,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await workspaceScratchpadService.createScratchFileFromSelection(parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
@@ -239,6 +259,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await globalScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
@@ -249,6 +274,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await workspaceScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If file was created in a subfolder, expand that folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 

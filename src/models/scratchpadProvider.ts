@@ -96,6 +96,37 @@ export class ScratchpadProvider
     this._onDidChangeTreeData.fire();
   }
 
+  /**
+   * Expand a folder by its path
+   */
+  async expandFolder(folderPath: string, treeView: vscode.TreeView<ScratchpadItem>): Promise<void> {
+    // Find the folder item that matches the path
+    const allItems = await this.getScratchItems();
+    const folderItem = this.findFolderByPath(allItems, folderPath);
+    
+    if (folderItem) {
+      // Reveal and expand the folder
+      await treeView.reveal(folderItem, { expand: true, focus: false, select: false });
+    }
+  }
+
+  private findFolderByPath(items: ScratchpadItem[], targetPath: string): ScratchpadFolderItem | undefined {
+    for (const item of items) {
+      if (item instanceof ScratchpadFolderItem) {
+        if (item.scratchFolder.path === targetPath) {
+          return item;
+        }
+        // Also check if this is a relative path match within our scratchpad directory
+        const relativePath = path.relative(this.scratchpadDir, targetPath);
+        const itemRelativePath = path.relative(this.scratchpadDir, item.scratchFolder.path);
+        if (relativePath === itemRelativePath) {
+          return item;
+        }
+      }
+    }
+    return undefined;
+  }
+
   getTreeItem(element: ScratchpadItem): vscode.TreeItem {
     return element;
   }
@@ -111,6 +142,64 @@ export class ScratchpadProvider
       // Files have no children
       return [];
     }
+  }
+
+  getParent(element: ScratchpadItem): ScratchpadItem | undefined {
+    if (element instanceof ScratchpadFolderItem) {
+      // Check if this folder is at root level
+      const parentPath = path.dirname(element.scratchFolder.path);
+      if (parentPath === this.scratchpadDir || this.isAtRootLevel(element.scratchFolder.path)) {
+        return undefined; // Root level folder
+      }
+      
+      // Find parent folder
+      return this.findParentFolder(element.scratchFolder.path);
+    } else {
+      // For files, find the parent folder
+      const parentPath = path.dirname(element.scratchFile.path);
+      if (parentPath === this.scratchpadDir || this.isAtRootLevel(element.scratchFile.path)) {
+        return undefined; // Root level file
+      }
+      
+      return this.findParentFolder(element.scratchFile.path);
+    }
+  }
+
+  private isAtRootLevel(itemPath: string): boolean {
+    // Check if the item is at the root level by comparing directory levels
+    const relativePath = path.relative(this.scratchpadDir, itemPath);
+    const pathSegments = relativePath.split(path.sep).filter(segment => segment !== '');
+    
+    // If there's only one segment (the item name), it's at root level
+    return pathSegments.length <= 1;
+  }
+
+  private findParentFolder(itemPath: string): ScratchpadFolderItem | undefined {
+    const parentPath = path.dirname(itemPath);
+    
+    // Try to find the parent folder in our current items
+    // Note: This is a simplified approach. In a real implementation, you might need
+    // to cache the tree structure or implement a more sophisticated lookup
+    const parentName = path.basename(parentPath);
+    
+    // Create a mock parent folder item for the reveal functionality
+    // This works because reveal only needs the path information
+    if (fs.existsSync(parentPath) && fs.statSync(parentPath).isDirectory()) {
+      const stats = fs.statSync(parentPath);
+      const scratchFolder: IScratchFolder = {
+        name: parentName,
+        path: parentPath,
+        created: stats.birthtime.getTime(),
+        lastModified: stats.mtime.getTime(),
+      };
+      
+      return new ScratchpadFolderItem(
+        scratchFolder,
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    }
+    
+    return undefined;
   }
 
   private getScratchItems(): ScratchpadItem[] {
