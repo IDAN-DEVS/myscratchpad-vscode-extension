@@ -296,6 +296,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await globalScratchpadService.createScratchFolder(parentFolderPath);
         globalScratchpadProvider.refresh();
+        
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+          await globalScratchpadProvider.expandFolder(parentFolderPath, globalTreeView);
+        }
       }
     ),
 
@@ -306,6 +311,11 @@ export function activate(context: vscode.ExtensionContext) {
         const parentFolderPath = item?.scratchFolder?.path;
         await workspaceScratchpadService.createScratchFolder(parentFolderPath);
         workspaceScratchpadProvider.refresh();
+        
+        // If folder was created in a subfolder, expand that parent folder
+        if (parentFolderPath) {
+          await workspaceScratchpadProvider.expandFolder(parentFolderPath, workspaceTreeView);
+        }
       }
     ),
 
