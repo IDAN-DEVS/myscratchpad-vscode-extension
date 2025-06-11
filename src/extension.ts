@@ -69,13 +69,46 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Track current selections
+  let currentGlobalSelection: any = undefined;
+  let currentWorkspaceSelection: any = undefined;
+
+  // Helper function to get base path from selected item
+  function getBasePath(selectedItem: any): string | undefined {
+    if (!selectedItem) return undefined;
+    
+    // If it's a folder, use its path
+    if (selectedItem.scratchFolder) {
+      return selectedItem.scratchFolder.path;
+    }
+    
+    // If it's a file, use its parent directory
+    if (selectedItem.scratchFile) {
+      return path.dirname(selectedItem.scratchFile.path);
+    }
+    
+    return undefined;
+  }
+
+  // Listen for selection changes in global tree view
+  globalTreeView.onDidChangeSelection(e => {
+    currentGlobalSelection = e.selection[0]
+  });
+
+  // Listen for selection changes in workspace tree view
+  workspaceTreeView.onDidChangeSelection(e => {
+    currentWorkspaceSelection = e.selection[0]
+  });
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFile",
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await globalScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         globalScratchpadProvider.refresh();
         
@@ -89,8 +122,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFile",
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await workspaceScratchpadService.createScratchFile(undefined, undefined, parentFolderPath);
         workspaceScratchpadProvider.refresh();
         
@@ -225,8 +260,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromSelection",
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await globalScratchpadService.createScratchFileFromSelection(parentFolderPath);
         globalScratchpadProvider.refresh();
         
@@ -240,8 +277,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromSelection",
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await workspaceScratchpadService.createScratchFileFromSelection(parentFolderPath);
         workspaceScratchpadProvider.refresh();
         
@@ -255,8 +294,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFileFromFile",
       async (fileUri: vscode.Uri, item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await globalScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         globalScratchpadProvider.refresh();
         
@@ -270,8 +311,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFileFromFile",
       async (fileUri: vscode.Uri, item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await workspaceScratchpadService.createScratchFileFromFile(fileUri, parentFolderPath);
         workspaceScratchpadProvider.refresh();
         
@@ -292,8 +335,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createScratchFolder",
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentGlobalSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await globalScratchpadService.createScratchFolder(parentFolderPath);
         globalScratchpadProvider.refresh();
         
@@ -307,8 +352,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "myscratchpad.createWorkspaceScratchFolder", 
       async (item?: any) => {
-        // Get parent folder path if a folder is selected
-        const parentFolderPath = item?.scratchFolder?.path;
+        // Use provided item, current selection, or fallback to undefined
+        const targetItem = currentWorkspaceSelection || item;
+        const parentFolderPath = getBasePath(targetItem);
+        
         await workspaceScratchpadService.createScratchFolder(parentFolderPath);
         workspaceScratchpadProvider.refresh();
         
