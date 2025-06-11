@@ -12,7 +12,10 @@ A powerful scratchpad extension for Visual Studio Code that provides both global
 
 ### Installation notes:
 1. Download the latest release from [here](https://github.com/lirancr/myscratchpad-vscode-extension/tree/main/releases)
-2. `cursor --install-extension {fileName}.vsix` 
+2. run in terminal (you can swap in `code` for `cursor`)
+   ```shell
+   code --install-extension {fileName}.vsix
+   ```
 
 ## Features
 
