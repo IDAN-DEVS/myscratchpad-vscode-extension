@@ -305,4 +305,31 @@ export class ScratchpadService {
     const fullPath = path.join(this.scratchpadDir, folderName);
     fs.mkdirSync(fullPath, { recursive: true });
   }
+
+  /**
+   * Delete a scratch folder and all its contents
+   */
+  async deleteScratchFolder(folderPath: string, folderName: string): Promise<boolean> {
+    const confirmation = await vscode.window.showWarningMessage(
+      `Are you sure you want to delete folder '${folderName}' and all its contents?`,
+      { modal: true },
+      "Delete"  
+    );
+
+    if (confirmation === "Delete") {
+      try {
+        // Recursively delete the folder and all its contents
+        fs.rmSync(folderPath, { recursive: true, force: true });
+        return true;
+      } catch (error) {
+        console.error("Failed to delete scratch folder:", error);
+        vscode.window.showErrorMessage(
+          `Failed to delete scratch folder: ${error}`
+        );
+        return false;
+      }
+    }
+
+    return false;
+  }
 }

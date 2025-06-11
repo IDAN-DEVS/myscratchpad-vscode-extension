@@ -65,7 +65,7 @@
       },
       {
         "command": "myscratchpad.deleteScratchFile",
-        "title": "Delete Scratch File",
+        "title": "Delete",
         "icon": "$(trash)"
       },
       {
@@ -116,39 +116,49 @@
         "command": "myscratchpad.createWorkspaceScratchFolder",
         "title": "Create New Folder",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "myscratchpad.collapseAllScratchpad",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "myscratchpad.collapseAllWorkspaceScratchpad",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "myscratchpad.createScratchFolder",
-          "when": "view == scratchpadExplorer",
-          "group": "navigation"
-        },
-        {
           "command": "myscratchpad.createScratchFile",
           "when": "view == scratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "myscratchpad.createScratchFolder",
+          "when": "view == scratchpadExplorer",
+          "group": "navigation@2"
         },
         {
           "command": "myscratchpad.refreshScratchpad",
           "when": "view == scratchpadExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "myscratchpad.createWorkspaceScratchFolder",
-          "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@3"
         },
         {
           "command": "myscratchpad.createWorkspaceScratchFile",
           "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFolder",
+          "when": "view == workspaceScratchpadExplorer",
+          "group": "navigation@2"
         },
         {
           "command": "myscratchpad.refreshWorkspaceScratchpad",
           "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [

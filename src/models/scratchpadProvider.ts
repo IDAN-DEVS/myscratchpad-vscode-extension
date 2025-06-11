@@ -3,6 +3,13 @@ import * as path from "path";
 import * as fs from "fs";
 import { IScratchFile, getFileTypeIcon } from "./scratchFile";
 
+export interface IScratchFolder {
+  name: string;
+  path: string;
+  created: number;
+  lastModified: number;
+}
+
 export class ScratchpadTreeItem extends vscode.TreeItem {
   constructor(
     public readonly scratchFile: IScratchFile,
@@ -35,14 +42,36 @@ export class ScratchpadTreeItem extends vscode.TreeItem {
   }
 }
 
+export class ScratchpadFolderItem extends vscode.TreeItem {
+  constructor(
+    public readonly scratchFolder: IScratchFolder,
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    super(scratchFolder.name, collapsibleState);
+
+    // Set folder icon
+    this.iconPath = vscode.ThemeIcon.Folder;
+
+    // Contextual data for commands
+    this.contextValue = "scratchFolder";
+
+    // Set tooltip
+    const created = new Date(scratchFolder.created).toLocaleString();
+    const modified = new Date(scratchFolder.lastModified).toLocaleString();
+    this.tooltip = `${scratchFolder.name}\nFolder\nCreated: ${created}\nLast Modified: ${modified}`;
+  }
+}
+
+export type ScratchpadItem = ScratchpadTreeItem | ScratchpadFolderItem;
+
 export class ScratchpadProvider
-  implements vscode.TreeDataProvider<ScratchpadTreeItem>
+  implements vscode.TreeDataProvider<ScratchpadItem>
 {
   private _onDidChangeTreeData: vscode.EventEmitter<
-    ScratchpadTreeItem | undefined | null | void
-  > = new vscode.EventEmitter<ScratchpadTreeItem | undefined | null | void>();
+    ScratchpadItem | undefined | null | void
+  > = new vscode.EventEmitter<ScratchpadItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<
-    ScratchpadTreeItem | undefined | null | void
+    ScratchpadItem | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
   constructor(
@@ -59,21 +88,24 @@ export class ScratchpadProvider
     this._onDidChangeTreeData.fire();
   }
 
-  getTreeItem(element: ScratchpadTreeItem): vscode.TreeItem {
+  getTreeItem(element: ScratchpadItem): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(
-    element?: ScratchpadTreeItem
-  ): Promise<ScratchpadTreeItem[]> {
-    if (element) {
-      return []; // No children for leaf nodes
+  async getChildren(element?: ScratchpadItem): Promise<ScratchpadItem[]> {
+    if (!element) {
+      // Root level - get all scratch items from all IDE directories
+      return this.getScratchItems();
+    } else if (element instanceof ScratchpadFolderItem) {
+      // Get children of a folder
+      return this.getScratchItemsFromDirectory(element.scratchFolder.path);
     } else {
-      return this.getScratchFiles();
+      // Files have no children
+      return [];
     }
   }
 
-  private getScratchFiles(): ScratchpadTreeItem[] {
+  private getScratchItems(): ScratchpadItem[] {
     try {
       const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
@@ -87,55 +119,115 @@ export class ScratchpadProvider
         return path.join(newPart1, ideName, "User", splitPart2);
       });
 
-      // Get all files from all IDE paths
-      const allFiles: string[] = [];
-      const uniqueFileNames = new Set<string>();
+      // Get all items from all IDE paths
+      const allItems: ScratchpadItem[] = [];
+      const uniqueItemNames = new Set<string>();
 
       idePaths.forEach((idePath) => {
         if (fs.existsSync(idePath)) {
-          const ideFiles = fs
-            .readdirSync(idePath)
-            .map((file) => path.join(idePath, file))
-            .filter((filePath) => !fs.statSync(filePath).isDirectory());
+          const ideItems = this.getItemsFromDirectory(idePath);
 
-          // Add files, filtering by unique file names
-          ideFiles.forEach((filePath) => {
-            const fileName = path.basename(filePath);
-            if (!uniqueFileNames.has(fileName)) {
-              uniqueFileNames.add(fileName);
-              allFiles.push(filePath);
+          // Add items, filtering by unique item names
+          ideItems.forEach((item) => {
+            const itemName = item instanceof ScratchpadTreeItem 
+              ? item.scratchFile.name 
+              : item.scratchFolder.name;
+            
+            if (!uniqueItemNames.has(itemName)) {
+              uniqueItemNames.add(itemName);
+              allItems.push(item);
             }
           });
         }
       });
 
-      // Process all found files
-      return allFiles
-        .map((filePath) => {
-          const stats = fs.statSync(filePath);
-          const fileName = path.basename(filePath);
-          const extension = path.extname(fileName).slice(1); // Remove the dot
-          const name = fileName;
-
-          const scratchFile: IScratchFile = {
-            name,
-            extension,
-            path: filePath,
-            created: stats.birthtime.getTime(),
-            lastModified: stats.mtime.getTime(),
-          };
-
-          return new ScratchpadTreeItem(
-            scratchFile,
-            vscode.TreeItemCollapsibleState.None
-          );
-        })
-        .sort(
-          (a, b) => b.scratchFile.lastModified - a.scratchFile.lastModified
-        ); // Sort by last modified (newest first)
+      return this.sortItems(allItems);
     } catch (error) {
       console.error("Error reading scratchpad directory:", error);
       return [];
     }
+  }
+
+  private getScratchItemsFromDirectory(dirPath: string): ScratchpadItem[] {
+    try {
+      const items = this.getItemsFromDirectory(dirPath);
+      return this.sortItems(items);
+    } catch (error) {
+      console.error("Error reading directory:", error);
+      return [];
+    }
+  }
+
+  private getItemsFromDirectory(dirPath: string): ScratchpadItem[] {
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+
+    const items: ScratchpadItem[] = [];
+    const dirEntries = fs.readdirSync(dirPath);
+
+    dirEntries.forEach((entry) => {
+      const fullPath = path.join(dirPath, entry);
+      const stats = fs.statSync(fullPath);
+
+      if (stats.isDirectory()) {
+        // Create folder item
+        const scratchFolder: IScratchFolder = {
+          name: entry,
+          path: fullPath,
+          created: stats.birthtime.getTime(),
+          lastModified: stats.mtime.getTime(),
+        };
+
+        items.push(
+          new ScratchpadFolderItem(
+            scratchFolder,
+            vscode.TreeItemCollapsibleState.Collapsed
+          )
+        );
+      } else {
+        // Create file item
+        const extension = path.extname(entry).slice(1); // Remove the dot
+        const scratchFile: IScratchFile = {
+          name: entry,
+          extension,
+          path: fullPath,
+          created: stats.birthtime.getTime(),
+          lastModified: stats.mtime.getTime(),
+        };
+
+        items.push(
+          new ScratchpadTreeItem(
+            scratchFile,
+            vscode.TreeItemCollapsibleState.None
+          )
+        );
+      }
+    });
+
+    return items;
+  }
+
+  private sortItems(items: ScratchpadItem[]): ScratchpadItem[] {
+    return items.sort((a, b) => {
+      const aIsFolder = a instanceof ScratchpadFolderItem;
+      const bIsFolder = b instanceof ScratchpadFolderItem;
+
+      // Sort folders first, then files
+      if (aIsFolder && !bIsFolder) {
+        return -1;
+      }
+      if (!aIsFolder && bIsFolder) {
+        return 1;
+      }
+
+      if (aIsFolder) {
+        // both folders - sort alphabetically
+        return (a.label as string).localeCompare(b.label as string)
+      } else {
+        // both files
+        return (b as ScratchpadTreeItem).scratchFile.lastModified - (a as ScratchpadTreeItem).scratchFile.lastModified
+      }
+    });
   }
 }

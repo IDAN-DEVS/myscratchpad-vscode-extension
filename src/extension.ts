@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as path from "path";
-import { ScratchpadProvider } from "./models/scratchpadProvider";
+import { ScratchpadProvider, IScratchFolder } from "./models/scratchpadProvider";
 import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
 import { codyService } from "./services/thirdParties/codyService";
@@ -54,14 +54,14 @@ export function activate(context: vscode.ExtensionContext) {
   // Register tree data providers
   const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
     treeDataProvider: globalScratchpadProvider,
-    showCollapseAll: false,
+    showCollapseAll: true,
   });
 
   const workspaceTreeView = vscode.window.createTreeView(
     "workspaceScratchpadExplorer",
     {
       treeDataProvider: workspaceScratchpadProvider,
-      showCollapseAll: false,
+      showCollapseAll: true,
     }
   );
 
@@ -87,6 +87,8 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.deleteScratchFile",
       async (item: ScratchpadProvider) => {
         const treeItem = item as any;
+        
+        // Handle file deletion
         if (treeItem?.scratchFile) {
           // Determine which service to use based on file path
           const isWorkspaceFile = treeItem.scratchFile.path.includes(
@@ -104,6 +106,30 @@ export function activate(context: vscode.ExtensionContext) {
 
           const success = await service.deleteScratchFile(
             treeItem.scratchFile as IScratchFile
+          );
+          if (success) {
+            provider.refresh();
+          }
+        }
+        // Handle folder deletion
+        else if (treeItem?.scratchFolder) {
+          // Determine which service to use based on folder path
+          const isWorkspaceFolder = treeItem.scratchFolder.path.includes(
+            "workspaceScratchFiles"
+          );
+          const { service, provider } = isWorkspaceFolder
+            ? {
+                service: workspaceScratchpadService,
+                provider: workspaceScratchpadProvider,
+              }
+            : {
+                service: globalScratchpadService,
+                provider: globalScratchpadProvider,
+              };
+
+          const success = await service.deleteScratchFolder(
+            treeItem.scratchFolder.path,
+            treeItem.scratchFolder.name
           );
           if (success) {
             provider.refresh();
