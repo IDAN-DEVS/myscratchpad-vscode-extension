@@ -43,17 +43,26 @@ You'll find **two scratchpad views** in the Explorer sidebar:
 
 ### ✨ Creating Files
 
-1. **Choose Your Scratchpad**:
+**Multiple ways to create scratchpad files:**
 
-   - Use **Global Scratchpad** for notes, snippets, and files you want across all projects
-   - Use **Workspace Scratchpad** for project-specific temporary files
-
-2. **Create a New File**:
+1. **Direct Creation**:
    - Click the "+" icon in either scratchpad view
-   - Select from predefined file types (JS, TS, HTML, CSS, JSON, MD, SQL, TXT)
-   - **OR** choose "Custom File" to specify any extension (py, go, java, rb, etc.)
-   - Provide a name or use the auto-generated timestamped name
-   - The file opens automatically with a basic template
+   - Enter the filename with extension (e.g., `notes.txt`, `script.py`)
+   - The file opens automatically with clipboard content as initial content
+
+2. **From Selected Text**:
+   - Select any text or code in VS Code
+   - Right-click and choose "Create workspace/global scratchpad"
+   - Creates a scratchpad with the selected content
+
+3. **From File Explorer**:
+   - Right-click on any file in the Explorer
+   - Choose "Create scratchpad from file"
+   - Creates a new scratchpad with smart naming (e.g., `hello.txt` → `hello_scratch.txt`)
+
+4. **Add to Cody AI**:
+   - Right-click any scratchpad file
+   - Select "Add to Cody AI as context" to use the file with AI assistance
 
 ### 🔧 Managing Files
 
@@ -62,38 +71,30 @@ You'll find **two scratchpad views** in the Explorer sidebar:
 - **Delete**: Right-click → Delete, or hover and click the trash icon
 - **Refresh**: Click the refresh icon to update the file listing
 
-### 🎯 Custom File Extensions
+### 🎯 Smart File Handling
 
-When selecting "Custom File", you can:
+The extension now provides streamlined file creation:
 
-- Enter any extension (without the dot): `py`, `go`, `java`, `rb`, `cpp`, etc.
-- The extension automatically detects the appropriate comment style
-- Files get relevant icons based on the extension
+- **Simple naming**: Just enter the filename with extension (e.g., `script.py`, `notes.md`)
+- **Clipboard integration**: New files automatically start with your clipboard content
+- **Smart naming**: Files created from existing files get intelligent naming
+- **Cross-editor sync**: Files sync seamlessly between VS Code, Cursor, and Windsurf
 
 ## Supported File Types
 
-### 🎯 Predefined Types
+### 🌟 Universal File Support
 
-- **JavaScript** (.js) - Console.log template
-- **TypeScript** (.ts) - Interface and function templates
-- **HTML** (.html) - Full HTML5 boilerplate
-- **CSS** (.css) - Basic styling template
-- **JSON** (.json) - Structured data template
-- **Markdown** (.md) - Documentation template
-- **SQL** (.sql) - Query template
-- **Plain Text** (.txt) - Simple text file
+MyScratchPad supports any file extension you need:
 
-### 🌟 Custom Extensions (Examples)
+- **Programming Languages**: `.js`, `.ts`, `.py`, `.go`, `.java`, `.rb`, `.cpp`, `.cs`, `.php`, `.swift`, `.kt`, `.rs`, `.dart`, `.lua`
+- **Web Technologies**: `.html`, `.css`, `.scss`, `.jsx`, `.tsx`, `.vue`, `.svelte`
+- **Data & Config**: `.json`, `.yaml`, `.toml`, `.xml`, `.ini`, `.cfg`, `.env`
+- **Documentation**: `.md`, `.txt`, `.rst`, `.adoc`
+- **Scripts**: `.sh`, `.ps1`, `.bat`, `.cmd`
+- **Database**: `.sql`, `.nosql`
+- **And any other extension you need!**
 
-- **Python** (.py), **Go** (.go), **Java** (.java)
-- **Ruby** (.rb), **C++** (.cpp), **C#** (.cs)
-- **PHP** (.php), **Swift** (.swift), **Kotlin** (.kt)
-- **Rust** (.rs), **Dart** (.dart), **Lua** (.lua)
-- **Shell Scripts** (.sh), **PowerShell** (.ps1)
-- **Config Files** (.yaml, .toml, .ini, .cfg)
-- **And many more!**
-
-Each file type includes appropriate templates with timestamps and comment styles.
+Files automatically start with your clipboard content and get appropriate icons based on their extension.
 
 ## 💡 Use Cases
 
@@ -104,14 +105,16 @@ Each file type includes appropriate templates with timestamps and comment styles
 - Learning experiments and practice code
 - Documentation drafts
 - Configuration examples
+- Content from your clipboard for quick access
 
 ### Workspace Scratchpad Perfect For:
 
 - Project-specific temporary files
-- Quick prototypes and experiments
+- Quick prototypes and experiments  
 - Meeting notes for the current project
 - Temporary data files and mock content
 - Project-specific snippets
+- Files derived from current project files
 
 ## 🔄 Cross-Editor Compatibility
 
@@ -145,18 +148,18 @@ None at this time. If you encounter any issues, please [report them on GitHub](h
 
 ## Release Notes
 
-### 0.0.15 - Latest
+### Latest Release
 
-🚀 **Cross-Editor Compatibility Update**:
+🚀 **Major Workflow Enhancement Update**:
 
+- **⚡ Simplified Creation**: Single-step file creation - just enter name with extension
+- **📋 Clipboard Integration**: New files automatically start with clipboard content
+- **🎯 Context Menu Creation**: Create scratchpads from selected text or existing files
+- **🧠 Smart Naming**: Intelligent file naming when creating from existing files
+- **🤖 Cody AI Integration**: Add scratchpad files directly to Cody AI as context
 - **🔄 Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf
-- **🎯 Custom File Extensions**: Support for any file extension with intelligent comment detection
-- **🎨 Enhanced Icons**: Smart file type detection with appropriate VS Code theme icons
-- **📝 Improved Templates**: Language-specific templates for 40+ file types
-- **🛠️ Better Workspace Detection**: Improved cross-platform workspace handling
+- **🌟 Universal File Support**: Support for any file extension with appropriate icons
 - **💼 Dual Scratchpad System**: Global and workspace-specific file management
-- **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
-- **⚡ Intuitive UI**: Easy file operations through Explorer sidebar
 
 ---
 
