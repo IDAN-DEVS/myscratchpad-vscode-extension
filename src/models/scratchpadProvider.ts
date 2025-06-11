@@ -65,8 +65,12 @@ export class ScratchpadFolderItem extends vscode.TreeItem {
 export type ScratchpadItem = ScratchpadTreeItem | ScratchpadFolderItem;
 
 export class ScratchpadProvider
-  implements vscode.TreeDataProvider<ScratchpadItem>
+  implements vscode.TreeDataProvider<ScratchpadItem>, vscode.TreeDragAndDropController<ScratchpadItem>
 {
+  // Drag and drop mime types - will be set in constructor
+  dropMimeTypes: string[];
+  dragMimeTypes: string[];
+  
   private _onDidChangeTreeData: vscode.EventEmitter<
     ScratchpadItem | undefined | null | void
   > = new vscode.EventEmitter<ScratchpadItem | undefined | null | void>();
@@ -78,6 +82,10 @@ export class ScratchpadProvider
     private scratchpadDir: string,
     public readonly scope: string = "global"
   ) {
+    // Set drag and drop mime types based on scope
+    this.dropMimeTypes = [`application/vnd.code.tree.scratchpad.${this.scope}`];
+    this.dragMimeTypes = [`application/vnd.code.tree.scratchpad.${this.scope}`];
+    
     // Ensure the scratchpad directory exists
     if (!fs.existsSync(scratchpadDir)) {
       fs.mkdirSync(scratchpadDir, { recursive: true });
@@ -229,5 +237,111 @@ export class ScratchpadProvider
         return (b as ScratchpadTreeItem).scratchFile.lastModified - (a as ScratchpadTreeItem).scratchFile.lastModified
       }
     });
+  }
+
+  // Drag and drop implementation
+  public async handleDrag(source: ScratchpadItem[], treeDataTransfer: vscode.DataTransfer): Promise<void> {
+    // Store the dragged items in the data transfer
+    const draggedItems = source.map(item => ({
+      isFolder: item instanceof ScratchpadFolderItem,
+      path: item instanceof ScratchpadFolderItem ? item.scratchFolder.path : item.scratchFile.path,
+      name: item instanceof ScratchpadFolderItem ? item.scratchFolder.name : item.scratchFile.name
+    }));
+    
+    treeDataTransfer.set(this.dragMimeTypes[0], new vscode.DataTransferItem(draggedItems));
+  }
+
+  public async handleDrop(target: ScratchpadItem | undefined, sources: vscode.DataTransfer): Promise<void> {
+    const transferItem = sources.get(this.dropMimeTypes[0]);
+    if (!transferItem) {
+      return;
+    }
+
+    const draggedItems: Array<{isFolder: boolean, path: string, name: string}> = transferItem.value;
+    
+    // Determine target directory - always use the main scratchpad directory structure
+    let targetDir: string;
+    
+    if (!target) {
+      // Dropped on empty space - move to root
+      targetDir = this.scratchpadDir;
+    } else if (target instanceof ScratchpadFolderItem) {
+      // Dropped on folder - need to find the corresponding folder in our scratchpad directory
+      const folderName = target.scratchFolder.name;
+      targetDir = path.join(this.scratchpadDir, folderName);
+    } else {
+      // Dropped on file - move to the same directory as the file would be in our scratchpad directory
+      const fileDir = path.dirname(target.scratchFile.path);
+      // Extract the relative path from the IDE-specific directory structure
+      const relativePath = this.getRelativePathFromScratchpadDir(fileDir);
+      targetDir = path.join(this.scratchpadDir, relativePath);
+    }
+
+    // Move each dragged item to the main scratchpad directory
+    for (const draggedItem of draggedItems) {
+      await this.moveItem(draggedItem.path, draggedItem.name, targetDir, draggedItem.isFolder);
+    }
+
+    // Refresh the tree view
+    this.refresh();
+  }
+
+  private getRelativePathFromScratchpadDir(fullPath: string): string {
+    // Extract the relative path by finding the common structure
+    // This handles the cross-IDE directory aggregation
+    const parts = fullPath.split(path.sep);
+    const scratchpadDirParts = this.scratchpadDir.split(path.sep);
+    
+    // Find where the paths diverge and get the relative portion
+    let relativeParts: string[] = [];
+    let foundScratchFiles = false;
+    
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === 'scratchFiles' || parts[i] === 'workspaceScratchFiles') {
+        foundScratchFiles = true;
+        // Skip the scratchFiles part and get everything after
+        relativeParts = parts.slice(i + 1);
+        break;
+      }
+    }
+    
+    return foundScratchFiles ? relativeParts.join(path.sep) : '';
+  }
+
+  private async moveItem(sourcePath: string, itemName: string, targetDir: string, isFolder: boolean): Promise<void> {
+    try {
+      const targetPath = path.join(targetDir, itemName);
+      
+      // Check if target already exists
+      if (fs.existsSync(targetPath)) {
+        vscode.window.showErrorMessage(`Cannot move ${itemName}: An item with this name already exists in the target location.`);
+        return;
+      }
+
+      // Check if we're trying to move an item into itself or its subdirectory
+      if (isFolder && targetPath.startsWith(sourcePath + path.sep)) {
+        vscode.window.showErrorMessage(`Cannot move folder into itself or its subdirectory.`);
+        return;
+      }
+
+      // Check if source and target are the same
+      if (sourcePath === targetPath) {
+        return; // No need to move
+      }
+
+      // Ensure target directory exists
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      // Move the item
+      fs.renameSync(sourcePath, targetPath);
+      
+      const itemType = isFolder ? 'folder' : 'file';
+      vscode.window.showInformationMessage(`Moved ${itemType} "${itemName}" successfully.`);
+    } catch (error) {
+      console.error(`Failed to move item:`, error);
+      vscode.window.showErrorMessage(`Failed to move ${itemName}: ${error}`);
+    }
   }
 }

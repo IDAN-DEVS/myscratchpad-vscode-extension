@@ -55,6 +55,8 @@ export function activate(context: vscode.ExtensionContext) {
   const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
     treeDataProvider: globalScratchpadProvider,
     showCollapseAll: true,
+    canSelectMany: true,
+    dragAndDropController: globalScratchpadProvider,
   });
 
   const workspaceTreeView = vscode.window.createTreeView(
@@ -62,6 +64,8 @@ export function activate(context: vscode.ExtensionContext) {
     {
       treeDataProvider: workspaceScratchpadProvider,
       showCollapseAll: true,
+      canSelectMany: true,
+      dragAndDropController: workspaceScratchpadProvider,
     }
   );
 
