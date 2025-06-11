@@ -366,6 +366,54 @@ export function activate(context: vscode.ExtensionContext) {
       }
     ),
 
+    vscode.commands.registerCommand(
+      "myscratchpad.revealInFinder",
+      async (item: any) => {
+        if (!item) return;
+        
+        let targetPath: string | undefined;
+        
+        // Get the path based on item type
+        if (item.scratchFile) {
+          targetPath = item.scratchFile.path;
+        } else if (item.scratchFolder) {
+          targetPath = item.scratchFolder.path;
+        }
+        
+        if (targetPath) {
+          // Use VS Code's built-in command to reveal in file explorer
+          await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(targetPath));
+        }
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.openInTerminal",
+      async (item: any) => {
+        if (!item) return;
+        
+        let targetPath: string | undefined;
+        
+        // Get the directory path based on item type
+        if (item.scratchFile) {
+          // For files, open terminal in the parent directory
+          targetPath = path.dirname(item.scratchFile.path);
+        } else if (item.scratchFolder) {
+          // For folders, open terminal in the folder itself
+          targetPath = item.scratchFolder.path;
+        }
+        
+        if (targetPath) {
+          // Create a new terminal and change to the target directory
+          const terminal = vscode.window.createTerminal({
+            name: 'Scratchpad Terminal',
+            cwd: targetPath
+          });
+          terminal.show();
+        }
+      }
+    ),
+
     globalTreeView,
     workspaceTreeView
   );

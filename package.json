@@ -126,6 +126,16 @@
         "command": "myscratchpad.collapseAllWorkspaceScratchpad",
         "title": "Collapse All",
         "icon": "$(collapse-all)"
+      },
+      {
+        "command": "myscratchpad.revealInFinder",
+        "title": "Reveal in Finder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "myscratchpad.openInTerminal",
+        "title": "Open in Integrated Terminal",
+        "icon": "$(terminal)"
       }
     ],
     "menus": {
@@ -205,6 +215,16 @@
         {
           "command": "myscratchpad.addFileToCodyAi",
           "when": "view == workspaceScratchpadExplorer"
+        },
+        {
+          "command": "myscratchpad.revealInFinder",
+          "when": "view == scratchpadExplorer || view == workspaceScratchpadExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.openInTerminal",
+          "when": "view == scratchpadExplorer || view == workspaceScratchpadExplorer",
+          "group": "navigation"
         }
       ],
       "editor/context": [
