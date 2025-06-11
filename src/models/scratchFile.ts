@@ -18,18 +18,6 @@ export enum FileTypeEnum {
   Custom = "custom",
 }
 
-export const fileTypeLabels: Record<FileTypeEnum, string> = {
-  [FileTypeEnum.JavaScript]: "JavaScript",
-  [FileTypeEnum.TypeScript]: "TypeScript",
-  [FileTypeEnum.HTML]: "HTML",
-  [FileTypeEnum.CSS]: "CSS",
-  [FileTypeEnum.JSON]: "JSON",
-  [FileTypeEnum.Markdown]: "Markdown",
-  [FileTypeEnum.Text]: "Plain Text",
-  [FileTypeEnum.SQL]: "SQL",
-  [FileTypeEnum.Custom]: "Custom File",
-};
-
 export const getFileTypeIcon = (extension: string): string => {
   switch (extension) {
     case FileTypeEnum.JavaScript:

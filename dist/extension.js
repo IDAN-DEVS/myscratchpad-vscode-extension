@@ -323,7 +323,7 @@ module.exports = require("fs");
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCustomFileIcon = exports.getFileTypeIcon = exports.fileTypeLabels = exports.FileTypeEnum = void 0;
+exports.getCustomFileIcon = exports.getFileTypeIcon = exports.FileTypeEnum = void 0;
 var FileTypeEnum;
 (function (FileTypeEnum) {
     FileTypeEnum["JavaScript"] = "js";
@@ -336,17 +336,6 @@ var FileTypeEnum;
     FileTypeEnum["SQL"] = "sql";
     FileTypeEnum["Custom"] = "custom";
 })(FileTypeEnum || (exports.FileTypeEnum = FileTypeEnum = {}));
-exports.fileTypeLabels = {
-    [FileTypeEnum.JavaScript]: "JavaScript",
-    [FileTypeEnum.TypeScript]: "TypeScript",
-    [FileTypeEnum.HTML]: "HTML",
-    [FileTypeEnum.CSS]: "CSS",
-    [FileTypeEnum.JSON]: "JSON",
-    [FileTypeEnum.Markdown]: "Markdown",
-    [FileTypeEnum.Text]: "Plain Text",
-    [FileTypeEnum.SQL]: "SQL",
-    [FileTypeEnum.Custom]: "Custom File",
-};
 const getFileTypeIcon = (extension) => {
     switch (extension) {
         case FileTypeEnum.JavaScript:
