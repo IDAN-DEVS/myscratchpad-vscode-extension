@@ -191,6 +191,22 @@ export function activate(context: vscode.ExtensionContext) {
       }
     ),
 
+    vscode.commands.registerCommand(
+      "myscratchpad.createScratchFolder",
+      async () => {
+        await globalScratchpadService.createScratchFolder();
+        globalScratchpadProvider.refresh();
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "myscratchpad.createWorkspaceScratchFolder", 
+      async () => {
+        await workspaceScratchpadService.createScratchFolder();
+        workspaceScratchpadProvider.refresh();
+      }
+    ),
+
     globalTreeView,
     workspaceTreeView
   );

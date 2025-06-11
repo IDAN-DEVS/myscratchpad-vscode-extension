@@ -106,10 +106,25 @@
       {
         "command": "myscratchpad.addFileToCodyAi",
         "title": "Add to Cody AI"
+      },
+      {
+        "command": "myscratchpad.createScratchFolder",
+        "title": "Create New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "myscratchpad.createWorkspaceScratchFolder",
+        "title": "Create New Folder",
+        "icon": "$(new-folder)"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "myscratchpad.createScratchFolder",
+          "when": "view == scratchpadExplorer",
+          "group": "navigation"
+        },
         {
           "command": "myscratchpad.createScratchFile",
           "when": "view == scratchpadExplorer",
@@ -118,6 +133,11 @@
         {
           "command": "myscratchpad.refreshScratchpad",
           "when": "view == scratchpadExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "myscratchpad.createWorkspaceScratchFolder",
+          "when": "view == workspaceScratchpadExplorer",
           "group": "navigation"
         },
         {

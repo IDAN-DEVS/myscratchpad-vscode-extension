@@ -279,4 +279,30 @@ export class ScratchpadService {
 
     return commentMap[extension.toLowerCase()] || "//";
   }
+
+  async createScratchFolder(): Promise<void> {
+    const folderName = await vscode.window.showInputBox({
+      prompt: "Enter a name for your new folder",
+      validateInput: (value) => {
+        if (!value) {
+          return "Folder name cannot be empty";
+        }
+        if (value.includes('.')) {
+          return "Folder names should not contain dots";
+        }
+        const fullPath = path.join(this.scratchpadDir, value);
+        if (fs.existsSync(fullPath)) {
+          return "A folder with this name already exists";
+        }
+        return null;
+      },
+    });
+
+    if (!folderName) {
+      return; // User cancelled
+    }
+
+    const fullPath = path.join(this.scratchpadDir, folderName);
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
 }
