@@ -185,7 +185,52 @@
           "group": "z_commands"
         }
       ]
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "myscratchpad.welcome",
+        "title": "🚀 Welcome to MyScratchPad",
+        "description": "Let's explore how MyScratchPad can supercharge your development workflow with smart note-taking and code snippets management.",
+        "steps": [
+          {
+            "id": "myscratchpad.welcome.overview",
+            "title": "📝 Understanding Your Scratchpads",
+            "description": "MyScratchPad offers two powerful ways to organize your notes:\n\n✨ **Global Scratchpad**\n- Available across all your projects\n- Perfect for general notes, code snippets, and todos\n- Syncs between VS Code, Cursor, and Windsurf\n\n🎯 **Workspace Scratchpad**\n- Project-specific notes and snippets\n- Organized by workspace for better context\n- Ideal for project-related todos and documentation\n\nFind both views in your Explorer sidebar under 'All Scratchpads' and 'This Workspace Scratchpads'.",
+            "media": {
+              "image": "assets/explorer-view.png",
+              "altText": "MyScratchPad views in Explorer"
+            }
+          },
+          {
+            "id": "myscratchpad.welcome.create",
+            "title": "✍️ Creating Your First Scratch Files",
+            "description": "Creating scratch files is quick and flexible:\n\n📂 **Quick Creation**\n- Click the '+' button in either view\n- Type filename with extension (e.g., notes.md, script.js)\n- Supports any file extension!\n\n🔥 **Power Features**\n1. Create from selection: Right-click selected code → 'Create Scratch File from Selection'\n2. Create from files: Right-click any file → 'Create Scratch File from File'\n3. Smart templates: File type-specific templates included\n\n💡 **Pro Tip**: Use descriptive names and appropriate extensions for syntax highlighting.",
+            "media": {
+              "image": "assets/explorer-view.png",
+              "altText": "Creating scratch files"
+            }
+          },
+          {
+            "id": "myscratchpad.welcome.manage",
+            "title": "🛠️ Managing Your Scratch Files",
+            "description": "Keep your scratch files organized with these tools:\n\n📋 **File Operations**\n- Rename: Right-click → Rename (F2)\n- Delete: Right-click → Delete (⌫)\n- Refresh: Sync your views with the refresh button\n\n🔄 **Cross-Editor Sync**\n- Files automatically sync between:\n  • VS Code\n  • Cursor\n  • Windsurf\n\n⚡ **Quick Access**\n- Pin important files to the top\n- Use the explorer view for quick navigation\n- Files are automatically saved\n\n🎨 **Smart Features**\n- Syntax highlighting based on file extension\n- File icons match your VS Code theme\n- Markdown preview support",
+            "media": {
+              "image": "assets/explorer-view.png",
+              "altText": "Managing scratch files"
+            }
+          },
+          {
+            "id": "myscratchpad.welcome.keyboard",
+            "title": "⌨️ Keyboard Shortcuts",
+            "description": "Speed up your workflow with these keyboard shortcuts:\n\n🎯 **Global Commands**\n- New Scratch File: Ctrl/Cmd + Alt + N\n- New Workspace Scratch File: Ctrl/Cmd + Alt + W\n- Refresh Views: Ctrl/Cmd + R\n\n📝 **File Operations**\n- Rename: F2\n- Delete: Delete/Backspace\n- Save: Ctrl/Cmd + S (Auto-save enabled)\n\n💡 **Pro Tip**: Customize these shortcuts in VS Code's Keyboard Shortcuts menu (Ctrl/Cmd + K Ctrl/Cmd + S)",
+            "media": {
+              "image": "assets/explorer-view.png",
+              "altText": "Keyboard shortcuts"
+            }
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

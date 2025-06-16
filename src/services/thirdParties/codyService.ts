@@ -13,34 +13,30 @@ const CODY_COMMAND = {
 };
 
 function checkCodyIsInstalledAndReady(): boolean {
-  try {
-    const codyExtension = vscode.extensions.getExtension(extensionIdentifier);
+  const codyExtension = vscode.extensions.getExtension(extensionIdentifier);
 
-    if (!codyExtension) {
-      vscode.window.showErrorMessage(
-        `${extensionName} extension is not installed or is disabled.`
-      );
-      return false;
-    }
-
-    if (!codyExtension.isActive) {
-      vscode.window.showErrorMessage(
-        `${extensionName} extension is not active.`
-      );
-      return false;
-    }
-
-    vscode.window.showInformationMessage(
-      `${extensionName} extension is ready.`
-    );
-    return true;
-  } catch (error) {
-    console.error("Error checking for cody extension", error);
+  if (!codyExtension) {
     vscode.window.showErrorMessage(
-      `Failed to check ${extensionName} extension status.`
+      `${extensionName} extension is not installed or is disabled.`
     );
     return false;
   }
+
+  if (!codyExtension.packageJSON?.version) {
+    vscode.window.showErrorMessage(
+      `${extensionName} extension is not loaded properly.`
+    );
+    return false;
+  }
+
+  if (!codyExtension.isActive) {
+    vscode.window.showErrorMessage(
+      `${extensionName} extension is not active.`
+    );
+    return false;
+  }
+
+  return true;
 }
 
 async function executeMentionFileCommand(uri: vscode.Uri) {
