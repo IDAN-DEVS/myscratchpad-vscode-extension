@@ -5,6 +5,19 @@ All notable changes to the "MyScratchPad" extension will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.18] - 2025-08-01
+
+### Changed
+
+- **UI Architecture**: Migrated from VS Code Explorer tree view to dedicated webview interface for better user experience and enhanced functionality
+- **Tree View Behavior**: Scratchpad sections now remain collapsed by default when extension loads, providing a cleaner initial view while still loading all files
+- **Interface Design**: Improved visual layout and interaction patterns with the new webview-based approach
+
+### Added
+
+- **Dedicated Webview Panel**: Custom webview interface replacing the previous Explorer tree integration
+- **Enhanced File Management**: Better file organization and display within the dedicated interface
+
 ## [0.0.17] - 2025-06-11
 
 ### Added
@@ -14,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Context Menu Creation**: Create scratchpads directly from selected text via right-click context menu
 - **File Explorer Integration**: Create scratchpads from any file in the explorer via right-click
 - **Smart Naming System**: Intelligent file naming when creating scratchpads from existing files (e.g., `hello.txt` → `hello_scratch.txt`)
-- **Cody AI Integration**: Add any scratchpad file to Cody AI as context via right-click menu
+
 
 ### Changed
 

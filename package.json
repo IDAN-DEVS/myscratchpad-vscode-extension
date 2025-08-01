@@ -2,7 +2,7 @@
   "name": "myscratchpad",
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "publisher": "jccoder",
   "author": {
     "name": "JC Coder"
@@ -39,16 +39,21 @@
   "main": "./dist/extension.js",
   "contributes": {
     "views": {
-      "explorer": [
+      "myscratchpad": [
         {
-          "icon": "",
-          "id": "scratchpadExplorer",
-          "name": "All Scratchpads"
-        },
+          "type": "webview",
+          "id": "myscratchpad.scratchpadView",
+          "name": "MyScratchPad",
+          "when": "true"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
         {
-          "icon": "",
-          "id": "workspaceScratchpadExplorer",
-          "name": "This Workspace Scratchpads"
+          "id": "myscratchpad",
+          "title": "MyScratchPad",
+          "icon": "$(notebook)"
         }
       ]
     },
@@ -102,65 +107,9 @@
         "command": "myscratchpad.createWorkspaceScratchFileFromFile",
         "title": "Create Workspace Scratch File from File",
         "icon": "$(new-file)"
-      },
-      {
-        "command": "myscratchpad.addFileToCodyAi",
-        "title": "Add to Cody AI"
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "myscratchpad.createScratchFile",
-          "when": "view == scratchpadExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "myscratchpad.refreshScratchpad",
-          "when": "view == scratchpadExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "myscratchpad.createWorkspaceScratchFile",
-          "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "myscratchpad.refreshWorkspaceScratchpad",
-          "when": "view == workspaceScratchpadExplorer",
-          "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "myscratchpad.deleteScratchFile",
-          "when": "view == scratchpadExplorer",
-          "group": "inline"
-        },
-        {
-          "command": "myscratchpad.renameScratchFile",
-          "when": "view == scratchpadExplorer",
-          "group": "inline"
-        },
-        {
-          "command": "myscratchpad.deleteScratchFile",
-          "when": "view == workspaceScratchpadExplorer",
-          "group": "inline"
-        },
-        {
-          "command": "myscratchpad.renameScratchFile",
-          "when": "view == workspaceScratchpadExplorer",
-          "group": "inline"
-        },
-        {
-          "command": "myscratchpad.addFileToCodyAi",
-          "when": "view == scratchpadExplorer"
-        },
-        {
-          "command": "myscratchpad.addFileToCodyAi",
-          "when": "view == workspaceScratchpadExplorer"
-        }
-      ],
       "editor/context": [
         {
           "command": "myscratchpad.createScratchFileFromSelection",

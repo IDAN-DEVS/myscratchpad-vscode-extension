@@ -5,7 +5,8 @@ import * as path from "path";
 import { ScratchpadProvider } from "./models/scratchpadProvider";
 import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
-import { codyService } from "./services/thirdParties/codyService";
+import { ScratchpadWebviewProvider } from "./views/scratchpadWebviewProvider";
+
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -51,19 +52,71 @@ export function activate(context: vscode.ExtensionContext) {
     "workspace"
   );
 
-  // Register tree data providers
-  const globalTreeView = vscode.window.createTreeView("scratchpadExplorer", {
-    treeDataProvider: globalScratchpadProvider,
-    showCollapseAll: false,
-  });
-
-  const workspaceTreeView = vscode.window.createTreeView(
-    "workspaceScratchpadExplorer",
-    {
-      treeDataProvider: workspaceScratchpadProvider,
-      showCollapseAll: false,
-    }
+  // Register webview provider instead of tree views
+  const webviewProvider = new ScratchpadWebviewProvider(
+    context.extensionUri,
+    globalScratchpadDir,
+    workspaceScratchpadDir,
+    globalScratchpadService,
+    workspaceScratchpadService
   );
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      ScratchpadWebviewProvider.viewType,
+      webviewProvider
+    )
+  );
+
+  // Set up file watchers for automatic refresh when files change
+  const setupFileWatchers = () => {
+    try {
+      // Watch global scratchpad directory
+      const globalWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(globalScratchpadDir, "**/*")
+      );
+      
+      // Watch workspace scratchpad directory  
+      const workspaceWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceScratchpadDir, "**/*")
+      );
+
+      // Refresh on file changes with a small debounce to prevent excessive refreshes
+      let refreshTimeout: NodeJS.Timeout | undefined;
+      const refreshHandler = () => {
+        if (refreshTimeout) {
+          clearTimeout(refreshTimeout);
+        }
+        refreshTimeout = setTimeout(() => {
+          webviewProvider.refresh();
+        }, 100);
+      };
+
+      globalWatcher.onDidChange(refreshHandler);
+      globalWatcher.onDidCreate(refreshHandler);
+      globalWatcher.onDidDelete(refreshHandler);
+      
+      workspaceWatcher.onDidChange(refreshHandler);
+      workspaceWatcher.onDidCreate(refreshHandler);
+      workspaceWatcher.onDidDelete(refreshHandler);
+
+      // Also listen to document save events to catch file saves that might not trigger file system events immediately
+      const documentSaveHandler = vscode.workspace.onDidSaveTextDocument((document) => {
+        const filePath = document.uri.fsPath;
+        // Check if the saved file is in one of our scratchpad directories
+        if (filePath.includes(globalScratchpadDir) || filePath.includes(workspaceScratchpadDir)) {
+          refreshHandler();
+        }
+      });
+
+      context.subscriptions.push(globalWatcher, workspaceWatcher, documentSaveHandler);
+    } catch (error) {
+      console.error("Error setting up file watchers:", error);
+    }
+  };
+
+  // Set up file watchers after a short delay to ensure directories exist
+  setTimeout(setupFileWatchers, 1000);
 
   // Register commands
   context.subscriptions.push(
@@ -71,7 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createScratchFile",
       async () => {
         await globalScratchpadService.createScratchFile();
-        globalScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -79,7 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createWorkspaceScratchFile",
       async () => {
         await workspaceScratchpadService.createScratchFile();
-        workspaceScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -106,7 +159,7 @@ export function activate(context: vscode.ExtensionContext) {
             treeItem.scratchFile as IScratchFile
           );
           if (success) {
-            provider.refresh();
+            webviewProvider.refresh();
           }
         }
       }
@@ -135,20 +188,20 @@ export function activate(context: vscode.ExtensionContext) {
             treeItem.scratchFile as IScratchFile
           );
           if (success) {
-            provider.refresh();
+            webviewProvider.refresh();
           }
         }
       }
     ),
 
     vscode.commands.registerCommand("myscratchpad.refreshScratchpad", () => {
-      globalScratchpadProvider.refresh();
+      webviewProvider.refresh();
     }),
 
     vscode.commands.registerCommand(
       "myscratchpad.refreshWorkspaceScratchpad",
       () => {
-        workspaceScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -156,7 +209,7 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createScratchFileFromSelection",
       async () => {
         await globalScratchpadService.createScratchFileFromSelection();
-        globalScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -164,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createWorkspaceScratchFileFromSelection",
       async () => {
         await workspaceScratchpadService.createScratchFileFromSelection();
-        workspaceScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -172,7 +225,7 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createScratchFileFromFile",
       async (fileUri: vscode.Uri) => {
         await globalScratchpadService.createScratchFileFromFile(fileUri);
-        globalScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
     ),
 
@@ -180,19 +233,9 @@ export function activate(context: vscode.ExtensionContext) {
       "myscratchpad.createWorkspaceScratchFileFromFile",
       async (fileUri: vscode.Uri) => {
         await workspaceScratchpadService.createScratchFileFromFile(fileUri);
-        workspaceScratchpadProvider.refresh();
+        webviewProvider.refresh();
       }
-    ),
-
-    vscode.commands.registerCommand(
-      "myscratchpad.addFileToCodyAi",
-      async (fileUri: vscode.Uri) => {
-        await codyService.executeMentionFileCommand(fileUri);
-      }
-    ),
-
-    globalTreeView,
-    workspaceTreeView
+    )
   );
 }
 
