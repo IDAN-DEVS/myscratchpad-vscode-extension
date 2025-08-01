@@ -5,7 +5,7 @@ import * as path from "path";
 import { ScratchpadProvider } from "./models/scratchpadProvider";
 import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
-import { codyService } from "./services/thirdParties/codyService";
+
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -184,12 +184,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     ),
 
-    vscode.commands.registerCommand(
-      "myscratchpad.addFileToCodyAi",
-      async (fileUri: vscode.Uri) => {
-        await codyService.executeMentionFileCommand(fileUri);
-      }
-    ),
+
 
     globalTreeView,
     workspaceTreeView

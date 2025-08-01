@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Context Menu Creation**: Create scratchpads directly from selected text via right-click context menu
 - **File Explorer Integration**: Create scratchpads from any file in the explorer via right-click
 - **Smart Naming System**: Intelligent file naming when creating scratchpads from existing files (e.g., `hello.txt` → `hello_scratch.txt`)
-- **Cody AI Integration**: Add any scratchpad file to Cody AI as context via right-click menu
+
 
 ### Changed
 

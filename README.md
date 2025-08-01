@@ -60,9 +60,6 @@ You'll find **two scratchpad views** in the Explorer sidebar:
    - Choose "Create scratchpad from file"
    - Creates a new scratchpad with smart naming (e.g., `hello.txt` → `hello_scratch.txt`)
 
-4. **Add to Cody AI**:
-   - Right-click any scratchpad file
-   - Select "Add to Cody AI as context" to use the file with AI assistance
 
 ### 🔧 Managing Files
 
@@ -156,7 +153,7 @@ None at this time. If you encounter any issues, please [report them on GitHub](h
 - **📋 Clipboard Integration**: New files automatically start with clipboard content
 - **🎯 Context Menu Creation**: Create scratchpads from selected text or existing files
 - **🧠 Smart Naming**: Intelligent file naming when creating from existing files
-- **🤖 Cody AI Integration**: Add scratchpad files directly to Cody AI as context
+
 - **🔄 Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf
 - **🌟 Universal File Support**: Support for any file extension with appropriate icons
 - **💼 Dual Scratchpad System**: Global and workspace-specific file management

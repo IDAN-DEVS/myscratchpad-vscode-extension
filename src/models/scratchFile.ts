@@ -86,7 +86,7 @@ export const getCustomFileIcon = (extension: string): string => {
     dockerfile: "package",
     tf: "symbol-object",
     hcl: "symbol-object",
-    cody: "robot",
+
     ["*"]: "file-code",
   };
 
