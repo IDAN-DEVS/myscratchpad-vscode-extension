@@ -112,6 +112,7 @@ export class ScratchpadProvider
       // Process all found files
       return allFiles
         .map((filePath) => {
+          // Use fresh stats to ensure we get the latest modification time
           const stats = fs.statSync(filePath);
           const fileName = path.basename(filePath);
           const extension = path.extname(fileName).slice(1); // Remove the dot

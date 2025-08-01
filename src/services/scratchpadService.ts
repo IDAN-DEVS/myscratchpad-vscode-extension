@@ -153,22 +153,17 @@ export class ScratchpadService {
    * Rename a scratch file
    */
   async renameScratchFile(scratchFile: IScratchFile): Promise<boolean> {
-    const nameWithoutExt = path.basename(
-      scratchFile.name,
-      `.${scratchFile.extension}`
-    );
-
     const newName = await vscode.window.showInputBox({
-      prompt: "Enter a new name for your scratch file",
-      value: nameWithoutExt,
+      prompt: "Enter a new name for your scratch file (include extension, e.g., note.txt, script.js)",
+      value: scratchFile.name,
       validateInput: (value) => {
         if (!value) {
           return "Name cannot be empty";
         }
-        const fullPath = path.join(
-          this.scratchpadDir,
-          `${value}.${scratchFile.extension}`
-        );
+        if (!value.includes(".")) {
+          return "Please include a file extension (e.g., .txt, .js, .md)";
+        }
+        const fullPath = path.join(this.scratchpadDir, value);
         if (fs.existsSync(fullPath) && fullPath !== scratchFile.path) {
           return "A file with this name already exists";
         }
@@ -180,10 +175,7 @@ export class ScratchpadService {
       return false; // User cancelled
     }
 
-    const newPath = path.join(
-      this.scratchpadDir,
-      `${newName}.${scratchFile.extension}`
-    );
+    const newPath = path.join(this.scratchpadDir, newName);
 
     try {
       fs.renameSync(scratchFile.path, newPath);
