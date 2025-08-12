@@ -154,25 +154,42 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
   private _getScratchFiles(scratchpadDir: string): IScratchFile[] {
     try {
-      // Ensure directory exists
-      if (!fs.existsSync(scratchpadDir)) {
-        return [];
-      }
+      const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
-      // Read files directly from the provided directory
-      const files = fs
-        .readdirSync(scratchpadDir)
-        .map((file) => path.join(scratchpadDir, file))
-        .filter((filePath) => {
-          try {
-            return fs.statSync(filePath).isFile();
-          } catch {
-            return false;
-          }
-        });
+      const splitPart1 = scratchpadDir.split("/User/")[0];
+      const splitPart2 = scratchpadDir.split("/User/")[1];
+
+      // Construct the path for each IDE
+      const idePaths = ideNames.map((ideName) => {
+        // remove the "ide path" from part1
+        const newPart1 = splitPart1.split("/").slice(0, -1).join("/");
+        return path.join(newPart1, ideName, "User", splitPart2);
+      });
+
+      // Get all files from all IDE paths
+      const allFiles: string[] = [];
+      const uniqueFileNames = new Set<string>();
+
+      idePaths.forEach((idePath) => {
+        if (fs.existsSync(idePath)) {
+          const ideFiles = fs
+            .readdirSync(idePath)
+            .map((file) => path.join(idePath, file))
+            .filter((filePath) => !fs.statSync(filePath).isDirectory());
+
+          // Add files, filtering by unique file names
+          ideFiles.forEach((filePath) => {
+            const fileName = path.basename(filePath);
+            if (!uniqueFileNames.has(fileName)) {
+              uniqueFileNames.add(fileName);
+              allFiles.push(filePath);
+            }
+          });
+        }
+      });
 
       // Process all found files
-      return files
+      return allFiles
         .map((filePath) => {
           try {
             const stats = fs.statSync(filePath);
