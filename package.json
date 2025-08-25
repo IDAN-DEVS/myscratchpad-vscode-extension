@@ -2,7 +2,7 @@
   "name": "myscratchpad",
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "publisher": "jccoder",
   "author": {
     "name": "JC Coder"
@@ -44,7 +44,8 @@
           "type": "webview",
           "id": "myscratchpad.scratchpadView",
           "name": "MyScratchPad",
-          "when": "true"
+          "when": "true",
+          "icon": "$(notebook)"
         }
       ]
     },

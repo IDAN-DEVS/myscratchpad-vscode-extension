@@ -85,6 +85,7 @@ export class ScratchpadService {
         if (!value.includes(".")) {
           return "Please include a file extension (e.g., .txt, .js, .md)";
         }
+        // Use path.join for cross-platform compatibility
         const fullPath = path.join(this.scratchpadDir, value);
         if (fs.existsSync(fullPath)) {
           return "A file with this name already exists";
@@ -100,7 +101,7 @@ export class ScratchpadService {
     // Extract extension from filename
     const extension = path.extname(fileName).slice(1); // Remove the dot
 
-    // Create the file
+    // Create the file with cross-platform path handling
     const fullPath = path.join(this.scratchpadDir, fileName);
     let content: string;
 
@@ -116,11 +117,23 @@ export class ScratchpadService {
       }
     }
 
-    fs.writeFileSync(fullPath, content);
+    try {
+      // Ensure directory exists before writing file
+      const dirPath = path.dirname(fullPath);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
 
-    // Open the file
-    const document = await vscode.workspace.openTextDocument(fullPath);
-    await vscode.window.showTextDocument(document);
+      fs.writeFileSync(fullPath, content, "utf8");
+      console.log("Created scratch file:", fullPath);
+
+      // Open the file
+      const document = await vscode.workspace.openTextDocument(fullPath);
+      await vscode.window.showTextDocument(document);
+    } catch (error) {
+      console.error("Error creating scratch file:", error);
+      vscode.window.showErrorMessage(`Failed to create scratch file: ${error}`);
+    }
   }
 
   /**

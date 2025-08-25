@@ -7,7 +7,6 @@ import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
 import { ScratchpadWebviewProvider } from "./views/scratchpadWebviewProvider";
 
-
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -75,8 +74,8 @@ export function activate(context: vscode.ExtensionContext) {
       const globalWatcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(globalScratchpadDir, "**/*")
       );
-      
-      // Watch workspace scratchpad directory  
+
+      // Watch workspace scratchpad directory
       const workspaceWatcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(workspaceScratchpadDir, "**/*")
       );
@@ -95,21 +94,30 @@ export function activate(context: vscode.ExtensionContext) {
       globalWatcher.onDidChange(refreshHandler);
       globalWatcher.onDidCreate(refreshHandler);
       globalWatcher.onDidDelete(refreshHandler);
-      
+
       workspaceWatcher.onDidChange(refreshHandler);
       workspaceWatcher.onDidCreate(refreshHandler);
       workspaceWatcher.onDidDelete(refreshHandler);
 
       // Also listen to document save events to catch file saves that might not trigger file system events immediately
-      const documentSaveHandler = vscode.workspace.onDidSaveTextDocument((document) => {
-        const filePath = document.uri.fsPath;
-        // Check if the saved file is in one of our scratchpad directories
-        if (filePath.includes(globalScratchpadDir) || filePath.includes(workspaceScratchpadDir)) {
-          refreshHandler();
+      const documentSaveHandler = vscode.workspace.onDidSaveTextDocument(
+        (document) => {
+          const filePath = document.uri.fsPath;
+          // Check if the saved file is in one of our scratchpad directories
+          if (
+            filePath.includes(globalScratchpadDir) ||
+            filePath.includes(workspaceScratchpadDir)
+          ) {
+            refreshHandler();
+          }
         }
-      });
+      );
 
-      context.subscriptions.push(globalWatcher, workspaceWatcher, documentSaveHandler);
+      context.subscriptions.push(
+        globalWatcher,
+        workspaceWatcher,
+        documentSaveHandler
+      );
     } catch (error) {
       console.error("Error setting up file watchers:", error);
     }
