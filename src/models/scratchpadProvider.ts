@@ -77,41 +77,131 @@ export class ScratchpadProvider
     try {
       const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
-      const splitPart1 = this.scratchpadDir.split("/User/")[0];
-      const splitPart2 = this.scratchpadDir.split("/User/")[1];
+      // Cross-platform path handling
+      const normalizedPath = path.normalize(this.scratchpadDir);
+
+      // Find the User directory in the path (could be "User" on macOS/Linux or "Users" on Windows)
+      let userDirIndex = -1;
+      const pathParts = normalizedPath.split(path.sep);
+
+      for (let i = 0; i < pathParts.length; i++) {
+        if (pathParts[i] === "User" || pathParts[i] === "Users") {
+          userDirIndex = i;
+          break;
+        }
+      }
+
+      if (userDirIndex === -1) {
+        console.warn(
+          "Could not find User/Users directory in path:",
+          normalizedPath
+        );
+        // Fallback to current directory only
+        return this.getDirectoryScratchFiles(this.scratchpadDir);
+      }
+
+      // Get the base path up to the IDE name (one level before User/Users)
+      const basePath = pathParts.slice(0, userDirIndex - 1).join(path.sep);
+      const relativePath = pathParts.slice(userDirIndex + 1).join(path.sep);
 
       // Construct the path for each IDE
       const idePaths = ideNames.map((ideName) => {
-        // remove the "ide path" from part1
-        const newPart1 = splitPart1.split("/").slice(0, -1).join("/");
-        return path.join(newPart1, ideName, "User", splitPart2);
+        // On Windows, we might need to handle the drive letter properly
+        if (process.platform === "win32" && basePath.includes(":")) {
+          return path.join(
+            basePath,
+            ideName,
+            pathParts[userDirIndex],
+            relativePath
+          );
+        } else {
+          return path.join(
+            basePath,
+            ideName,
+            pathParts[userDirIndex],
+            relativePath
+          );
+        }
       });
 
       // Get all files from all IDE paths
       const allFiles: string[] = [];
       const uniqueFileNames = new Set<string>();
 
+      // Always include the current directory first
+      if (fs.existsSync(this.scratchpadDir)) {
+        const currentDirFiles = this.getDirectoryScratchFiles(
+          this.scratchpadDir
+        );
+        return currentDirFiles;
+      }
+
       idePaths.forEach((idePath) => {
         if (fs.existsSync(idePath)) {
-          const ideFiles = fs
-            .readdirSync(idePath)
-            .map((file) => path.join(idePath, file))
-            .filter((filePath) => !fs.statSync(filePath).isDirectory());
+          try {
+            const ideFiles = fs
+              .readdirSync(idePath)
+              .map((file) => path.join(idePath, file))
+              .filter((filePath) => {
+                try {
+                  return !fs.statSync(filePath).isDirectory();
+                } catch (error) {
+                  console.warn("Error checking file stats:", filePath, error);
+                  return false;
+                }
+              });
 
-          // Add files, filtering by unique file names
-          ideFiles.forEach((filePath) => {
-            const fileName = path.basename(filePath);
-            if (!uniqueFileNames.has(fileName)) {
-              uniqueFileNames.add(fileName);
-              allFiles.push(filePath);
-            }
-          });
+            // Add files, filtering by unique file names
+            ideFiles.forEach((filePath) => {
+              const fileName = path.basename(filePath);
+              if (!uniqueFileNames.has(fileName)) {
+                uniqueFileNames.add(fileName);
+                allFiles.push(filePath);
+              }
+            });
+          } catch (error) {
+            console.warn("Error reading directory:", idePath, error);
+          }
         }
       });
 
       // Process all found files
-      return allFiles
-        .map((filePath) => {
+      return this.processFileList(allFiles);
+    } catch (error) {
+      console.error("Error reading scratchpad directory:", error);
+      return [];
+    }
+  }
+
+  private getDirectoryScratchFiles(dirPath: string): ScratchpadTreeItem[] {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        return [];
+      }
+
+      const files = fs
+        .readdirSync(dirPath)
+        .map((file) => path.join(dirPath, file))
+        .filter((filePath) => {
+          try {
+            return !fs.statSync(filePath).isDirectory();
+          } catch (error) {
+            console.warn("Error checking file stats:", filePath, error);
+            return false;
+          }
+        });
+
+      return this.processFileList(files);
+    } catch (error) {
+      console.error("Error reading directory:", dirPath, error);
+      return [];
+    }
+  }
+
+  private processFileList(files: string[]): ScratchpadTreeItem[] {
+    return files
+      .map((filePath) => {
+        try {
           // Use fresh stats to ensure we get the latest modification time
           const stats = fs.statSync(filePath);
           const fileName = path.basename(filePath);
@@ -130,13 +220,12 @@ export class ScratchpadProvider
             scratchFile,
             vscode.TreeItemCollapsibleState.None
           );
-        })
-        .sort(
-          (a, b) => b.scratchFile.lastModified - a.scratchFile.lastModified
-        ); // Sort by last modified (newest first)
-    } catch (error) {
-      console.error("Error reading scratchpad directory:", error);
-      return [];
-    }
+        } catch (error) {
+          console.error("Error processing file:", filePath, error);
+          return null;
+        }
+      })
+      .filter((item): item is ScratchpadTreeItem => item !== null)
+      .sort((a, b) => b.scratchFile.lastModified - a.scratchFile.lastModified); // Sort by last modified (newest first)
   }
 }

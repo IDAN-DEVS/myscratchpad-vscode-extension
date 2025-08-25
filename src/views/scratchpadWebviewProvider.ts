@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { IScratchFile, getFileTypeIcon } from "../models/scratchFile";
+import { IScratchFile } from "../models/scratchFile";
 import { ScratchpadService } from "../services/scratchpadService";
 
 export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
@@ -44,30 +44,123 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "ready":
-          // Webview is ready, send initial data
           this.refresh();
           break;
+
         case "createGlobalScratch":
           await this._globalService.createScratchFile();
           this.refresh();
           break;
+
         case "createWorkspaceScratch":
           await this._workspaceService.createScratchFile();
           this.refresh();
           break;
-        case "openFile":
-          const document = await vscode.workspace.openTextDocument(data.path);
-          await vscode.window.showTextDocument(document);
+
+        case "openFile": {
+          const providedPath = data.path;
+
+          // Prepare candidate variations to handle different encodings and separators
+          const candidates: string[] = [];
+          if (typeof providedPath === "string") {
+            candidates.push(providedPath);
+            candidates.push(path.normalize(providedPath));
+            candidates.push(providedPath.replace(/\\/g, "/"));
+            candidates.push(providedPath.replace(/\//g, "\\"));
+            try {
+              const decoded = decodeURIComponent(providedPath);
+              if (decoded !== providedPath) {
+                candidates.push(decoded);
+              }
+            } catch (e) {
+              // ignore decode errors
+            }
+          }
+
+          const uniqueCandidates = Array.from(new Set(candidates));
+
+          let existingPath: string | undefined;
+          for (const candidate of uniqueCandidates) {
+            try {
+              if (fs.existsSync(candidate)) {
+                existingPath = candidate;
+                break;
+              }
+            } catch (e) {
+              console.warn("existsSync check failed for", candidate, e);
+            }
+          }
+
+          if (!existingPath) {
+            try {
+              const resolved = path.resolve(providedPath);
+              if (fs.existsSync(resolved)) {
+                existingPath = resolved;
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          try {
+            if (existingPath) {
+              const fileUri = vscode.Uri.file(existingPath);
+              const document = await vscode.workspace.openTextDocument(fileUri);
+              await vscode.window.showTextDocument(document);
+              if (this._view) {
+                this._view.webview.postMessage({
+                  type: "openResult",
+                  success: true,
+                  path: existingPath,
+                });
+              }
+            } else {
+              console.warn(
+                "No existing file found for candidates, attempting vscode.Uri.parse"
+              );
+              const parsed = vscode.Uri.parse(providedPath);
+              const document = await vscode.workspace.openTextDocument(parsed);
+              await vscode.window.showTextDocument(document);
+              if (this._view) {
+                this._view.webview.postMessage({
+                  type: "openResult",
+                  success: true,
+                  path: providedPath,
+                });
+              }
+            }
+          } catch (err) {
+            console.error(
+              "Failed to open file from webview after trying candidates:",
+              err,
+              providedPath
+            );
+            vscode.window.showErrorMessage(`Failed to open file: ${err}`);
+            if (this._view) {
+              this._view.webview.postMessage({
+                type: "openResult",
+                success: false,
+                error: String(err),
+                candidates: uniqueCandidates,
+              });
+            }
+          }
+
           break;
+        }
+
         case "deleteFile":
           await this._deleteFile(data.file);
           break;
+
         case "renameFile":
           await this._renameFile(data.file);
           break;
+
         case "refresh":
           this.refresh();
           break;
+
         case "search":
           this._handleSearch(data.query);
           break;
@@ -78,7 +171,10 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
     const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
       const filePath = document.uri.fsPath;
       // Check if the saved file is in one of our scratchpad directories
-      if (filePath.includes(this._globalDir) || filePath.includes(this._workspaceDir)) {
+      if (
+        filePath.includes(this._globalDir) ||
+        filePath.includes(this._workspaceDir)
+      ) {
         // Small delay to ensure file system has updated
         setTimeout(() => this.refresh(), 50);
       }
@@ -92,8 +188,10 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _deleteFile(file: IScratchFile): Promise<void> {
     const isWorkspaceFile = file.path.includes("workspaceScratchFiles");
-    const service = isWorkspaceFile ? this._workspaceService : this._globalService;
-    
+    const service = isWorkspaceFile
+      ? this._workspaceService
+      : this._globalService;
+
     const success = await service.deleteScratchFile(file);
     if (success) {
       this.refresh();
@@ -102,8 +200,10 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _renameFile(file: IScratchFile): Promise<void> {
     const isWorkspaceFile = file.path.includes("workspaceScratchFiles");
-    const service = isWorkspaceFile ? this._workspaceService : this._globalService;
-    
+    const service = isWorkspaceFile
+      ? this._workspaceService
+      : this._globalService;
+
     const success = await service.renameScratchFile(file);
     if (success) {
       this.refresh();
@@ -115,23 +215,26 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
       const { globalFiles, workspaceFiles } = this._getAllFiles();
       const filteredGlobal = this._filterFiles(globalFiles, query);
       const filteredWorkspace = this._filterFiles(workspaceFiles, query);
-      
+
       this._view.webview.postMessage({
         type: "searchResults",
         globalFiles: filteredGlobal,
         workspaceFiles: filteredWorkspace,
-        query
+        query,
       });
     }
   }
 
   private _filterFiles(files: IScratchFile[], query: string): IScratchFile[] {
-    if (!query.trim()) {return files;}
-    
+    if (!query.trim()) {
+      return files;
+    }
+
     const lowercaseQuery = query.toLowerCase();
-    return files.filter(file => 
-      file.name.toLowerCase().includes(lowercaseQuery) ||
-      file.extension.toLowerCase().includes(lowercaseQuery)
+    return files.filter(
+      (file) =>
+        file.name.toLowerCase().includes(lowercaseQuery) ||
+        file.extension.toLowerCase().includes(lowercaseQuery)
     );
   }
 
@@ -141,12 +244,15 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
       this._view.webview.postMessage({
         type: "refresh",
         globalFiles,
-        workspaceFiles
+        workspaceFiles,
       });
     }
   }
 
-  private _getAllFiles(): { globalFiles: IScratchFile[], workspaceFiles: IScratchFile[] } {
+  private _getAllFiles(): {
+    globalFiles: IScratchFile[];
+    workspaceFiles: IScratchFile[];
+  } {
     const globalFiles = this._getScratchFiles(this._globalDir);
     const workspaceFiles = this._getScratchFiles(this._workspaceDir);
     return { globalFiles, workspaceFiles };
@@ -156,67 +262,150 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
     try {
       const ideNames = ["Code", "Code - Insiders", "Cursor", "Windsurf"];
 
-      const splitPart1 = scratchpadDir.split("/User/")[0];
-      const splitPart2 = scratchpadDir.split("/User/")[1];
+      // Cross-platform path handling
+      const normalizedPath = path.normalize(scratchpadDir);
+
+      // Find the User directory in the path (could be "User" on macOS/Linux or "Users" on Windows)
+      let userDirIndex = -1;
+      const pathParts = normalizedPath.split(path.sep);
+
+      for (let i = 0; i < pathParts.length; i++) {
+        if (pathParts[i] === "User" || pathParts[i] === "Users") {
+          userDirIndex = i;
+          break;
+        }
+      }
+
+      if (userDirIndex === -1) {
+        console.warn(
+          "Could not find User/Users directory in path:",
+          normalizedPath
+        );
+        // Fallback to current directory only
+        return this._getDirectoryScratchFiles(scratchpadDir);
+      }
+
+      // Get the base path up to the IDE name (one level before User/Users)
+      const basePath = pathParts.slice(0, userDirIndex - 1).join(path.sep);
+      const relativePath = pathParts.slice(userDirIndex + 1).join(path.sep);
 
       // Construct the path for each IDE
       const idePaths = ideNames.map((ideName) => {
-        // remove the "ide path" from part1
-        const newPart1 = splitPart1.split("/").slice(0, -1).join("/");
-        return path.join(newPart1, ideName, "User", splitPart2);
+        // On Windows, we might need to handle the drive letter properly
+        if (process.platform === "win32" && basePath.includes(":")) {
+          return path.join(
+            basePath,
+            ideName,
+            pathParts[userDirIndex],
+            relativePath
+          );
+        } else {
+          return path.join(
+            basePath,
+            ideName,
+            pathParts[userDirIndex],
+            relativePath
+          );
+        }
       });
 
       // Get all files from all IDE paths
       const allFiles: string[] = [];
       const uniqueFileNames = new Set<string>();
 
+      // Always include the current directory first
+      if (fs.existsSync(scratchpadDir)) {
+        const currentDirFiles = this._getDirectoryScratchFiles(scratchpadDir);
+        return currentDirFiles;
+      }
+
       idePaths.forEach((idePath) => {
         if (fs.existsSync(idePath)) {
-          const ideFiles = fs
-            .readdirSync(idePath)
-            .map((file) => path.join(idePath, file))
-            .filter((filePath) => !fs.statSync(filePath).isDirectory());
+          try {
+            const ideFiles = fs
+              .readdirSync(idePath)
+              .map((file) => path.join(idePath, file))
+              .filter((filePath) => {
+                try {
+                  return !fs.statSync(filePath).isDirectory();
+                } catch (error) {
+                  console.warn("Error checking file stats:", filePath, error);
+                  return false;
+                }
+              });
 
-          // Add files, filtering by unique file names
-          ideFiles.forEach((filePath) => {
-            const fileName = path.basename(filePath);
-            if (!uniqueFileNames.has(fileName)) {
-              uniqueFileNames.add(fileName);
-              allFiles.push(filePath);
-            }
-          });
+            // Add files, filtering by unique file names
+            ideFiles.forEach((filePath) => {
+              const fileName = path.basename(filePath);
+              if (!uniqueFileNames.has(fileName)) {
+                uniqueFileNames.add(fileName);
+                allFiles.push(filePath);
+              }
+            });
+          } catch (error) {
+            console.warn("Error reading directory:", idePath, error);
+          }
         }
       });
 
       // Process all found files
-      return allFiles
-        .map((filePath) => {
-          try {
-            const stats = fs.statSync(filePath);
-            const fileName = path.basename(filePath);
-            const extension = path.extname(fileName).slice(1);
-            const name = fileName;
-
-            const scratchFile: IScratchFile = {
-              name,
-              extension,
-              path: filePath,
-              created: stats.birthtime.getTime(),
-              lastModified: stats.mtime.getTime(),
-            };
-
-            return scratchFile;
-          } catch (error) {
-            console.error(`Error reading file ${filePath}:`, error);
-            return null;
-          }
-        })
-        .filter((file): file is IScratchFile => file !== null)
-        .sort((a, b) => b.lastModified - a.lastModified);
+      return this._processFileList(allFiles);
     } catch (error) {
       console.error("Error reading scratchpad directory:", error);
       return [];
     }
+  }
+
+  private _getDirectoryScratchFiles(dirPath: string): IScratchFile[] {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        return [];
+      }
+
+      const files = fs
+        .readdirSync(dirPath)
+        .map((file) => path.join(dirPath, file))
+        .filter((filePath) => {
+          try {
+            return !fs.statSync(filePath).isDirectory();
+          } catch (error) {
+            console.warn("Error checking file stats:", filePath, error);
+            return false;
+          }
+        });
+
+      return this._processFileList(files);
+    } catch (error) {
+      console.error("Error reading directory:", dirPath, error);
+      return [];
+    }
+  }
+
+  private _processFileList(files: string[]): IScratchFile[] {
+    return files
+      .map((filePath) => {
+        try {
+          const stats = fs.statSync(filePath);
+          const fileName = path.basename(filePath);
+          const extension = path.extname(fileName).slice(1);
+          const name = fileName;
+
+          const scratchFile: IScratchFile = {
+            name,
+            extension,
+            path: filePath,
+            created: stats.birthtime.getTime(),
+            lastModified: stats.mtime.getTime(),
+          };
+
+          return scratchFile;
+        } catch (error) {
+          console.error("Error processing file:", filePath, error);
+          return null;
+        }
+      })
+      .filter((file): file is IScratchFile => file !== null)
+      .sort((a, b) => b.lastModified - a.lastModified);
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
@@ -518,7 +707,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
         }
         
         function openFile(path) {
-            vscode.postMessage({ type: 'openFile', path });
+            vscode.postMessage({ type: 'openFile', path: path });
         }
         
         function deleteFile(file) {
@@ -591,27 +780,75 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
         function renderFileList(files, containerId) {
             const container = document.getElementById(containerId);
             const countElement = document.getElementById(containerId.replace('-files', '-count'));
-            
+
             countElement.textContent = files.length;
-            
+
+            // Clear container
+            container.innerHTML = '';
+
             if (files.length === 0) {
                 container.innerHTML = '<li class="empty-state">No files found</li>';
                 return;
             }
-            
-            container.innerHTML = files.map(file => \`
-                <li class="file-item" onclick="openFile('\${file.path}')">
-                    <span class="file-icon">\${getFileIcon(file.extension)}</span>
-                    <div class="file-info">
-                        <div class="file-name" title="\${file.name}">\${file.name}</div>
-                        <div class="file-meta">Modified: \${formatDate(file.lastModified)}</div>
-                    </div>
-                    <div class="file-actions">
-                        <button class="file-action" onclick="event.stopPropagation(); renameFile(\${JSON.stringify(file).replace(/"/g, '&quot;')})" title="Rename">✏️</button>
-                        <button class="file-action" onclick="event.stopPropagation(); deleteFile(\${JSON.stringify(file).replace(/"/g, '&quot;')})" title="Delete">🗑️</button>
-                    </div>
-                </li>
-            \`).join('');
+
+            // Build DOM nodes to avoid string-escaping issues on Windows paths
+            files.forEach((file) => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+
+                li.addEventListener('click', () => {
+                    openFile(file.path);
+                });
+
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'file-icon';
+                iconSpan.textContent = getFileIcon(file.extension);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'file-info';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'file-name';
+                nameDiv.title = file.name;
+                nameDiv.textContent = file.name;
+
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'file-meta';
+                metaDiv.textContent = 'Modified: ' + formatDate(file.lastModified);
+
+                infoDiv.appendChild(nameDiv);
+                infoDiv.appendChild(metaDiv);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'file-actions';
+
+                const renameBtn = document.createElement('button');
+                renameBtn.className = 'file-action';
+                renameBtn.title = 'Rename';
+                renameBtn.textContent = '✏️';
+                renameBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    renameFile(file);
+                });
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'file-action';
+                deleteBtn.title = 'Delete';
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    deleteFile(file);
+                });
+
+                actionsDiv.appendChild(renameBtn);
+                actionsDiv.appendChild(deleteBtn);
+
+                li.appendChild(iconSpan);
+                li.appendChild(infoDiv);
+                li.appendChild(actionsDiv);
+
+                container.appendChild(li);
+            });
         }
         
         // Handle messages from the extension
