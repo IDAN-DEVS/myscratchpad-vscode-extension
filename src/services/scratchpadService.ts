@@ -167,7 +167,8 @@ export class ScratchpadService {
    */
   async renameScratchFile(scratchFile: IScratchFile): Promise<boolean> {
     const newName = await vscode.window.showInputBox({
-      prompt: "Enter a new name for your scratch file (include extension, e.g., note.txt, script.js)",
+      prompt:
+        "Enter a new name for your scratch file (include extension, e.g., note.txt, script.js)",
       value: scratchFile.name,
       validateInput: (value) => {
         if (!value) {

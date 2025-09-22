@@ -1,198 +1,109 @@
-# MyScratchPad VS Code Extension
+# MyScratchPad — Fast, portable scratch files for modern editors
 
-A powerful scratchpad extension for Visual Studio Code that provides both global and workspace-specific scratch files. Create, manage, and organize temporary files with support for multiple file types and custom extensions. **Works seamlessly across VS Code, Cursor, and Windsurf editors** - files created in one editor are instantly available in the others!
+Create, store, and access quick notes and code snippets across IDEs. MyScratchPad gives you lightweight, persistent scratch files organized into global and workspace scopes — fast to create, easy to manage, and designed for everyday developer flow.
 
-<br/>
-<video src="https://pub-db4f9d2ca78f4d78a89b8e54dca08c9f.r2.dev/installation%20and%20usage%20myscratchpad%20demo%20v1.mp4" autoplay loop muted playsinline></video>
+Why you'll love it:
+
+- Instant scratch file creation (single-step)
+- Cross-editor access — use the same files in VS Code, Cursor, Windsurf (where supported)
+- Clean webview UI for browsing, creating, and managing scratch files
+- Lightweight and unobtrusive — built for speed, not bloat
+
+---
+
+## Quick Highlights
+
+- **Global + Workspace scopes**: Keep notes that travel with you or stay with a project.
+- **Single-step creation**: Enter a filename and go — files open immediately with clipboard content as a starting point.
+- **Multiple create paths**: Create from selection, from existing files, or via the `+` button.
+- **Quick search**: Filter and find scratch files instantly using the built-in search box in the webview.
+- **Flexible file types**: Works with any extension; provides smart templates and icons for common types.
+
+---
+
+## Why MyScratchPad?
+
+- **Speed**: Stop fighting with temporary files — create and access them in seconds.
+- **Convenience**: Clipboard-aware creation and contextual commands make it feel native.
+- **Simplicity**: Focused features that solve a single problem well — temporary notes and snippets.
+
+---
 
 ## Features
 
-### 🌍 Dual Scratchpad System
+- Global and workspace-scoped scratch files
+- One-step creation with extension-aware templates
+- Clipboard-aware initial content for new files
+- Create from selection or from an existing file via context menus
+- Rename, delete, and refresh with a simple, consistent UI
+- Rich webview interface for browsing and quick actions
 
-- **Global Scratchpad**: Files that persist across all workspaces and projects
-- **Workspace Scratchpad**: Files that are specific to the current workspace/project
-
-### 📁 File Type Support
-
-- **Predefined Types**: JavaScript, TypeScript, HTML, CSS, JSON, Markdown, SQL, Plain Text
-- **Custom Extensions**: Add any file extension (Python, Go, Java, Ruby, etc.) with smart comment detection
-- **Smart Icons**: Automatic file type detection with appropriate VS Code theme icons
-
-### 🛠️ File Management
-
-- Create files with auto-generated timestamped names
-- Rename and delete files with intuitive context menus
-- Type-specific templates for quick starts
-- Refresh views to sync file listings
-
-### 💾 Intelligent Storage
-
-- Global files stored in VS Code's global storage (persist across all projects)
-- Workspace files organized by workspace folder name
-- Cross-platform path handling for Windows, macOS, and Linux
-- **Cross-Editor Compatibility**: Files sync between VS Code, Cursor, and Windsurf
+---
 
 ## How to Use
 
-### 📋 Accessing Scratchpads
+1. Install the extension from the VS Code Marketplace and reload.
+2. Open the Explorer sidebar (Ctrl/Cmd+Shift+E) and locate the **MyScratchPad** view.
+3. Use the top `+` button to create a new file — include an extension (e.g., `note.md`).
+4. Right-click a text selection and choose to create a scratch from selection, or right-click a file to create a scratch from that file.
+5. Rename, delete, and refresh through the context menu or UI buttons.
 
-You'll find **two scratchpad views** in the Explorer sidebar:
+Pro tips:
 
-- **Scratchpad**: For global files (available across all projects)
-- **Workspace Scratchpad**: For project-specific files
+- To create from clipboard quickly, hit `+` and paste a filename — clipboard contents will be used as the file body.
+- Use workspace scratchpads for project-specific experiments and global scratchpads for cross-project snippets.
 
-### ✨ Creating Files
+---
 
-**Multiple ways to create scratchpad files:**
+## Commands
 
-1. **Direct Creation**:
-   - Click the "+" icon in either scratchpad view
-   - Enter the filename with extension (e.g., `notes.txt`, `script.py`)
-   - The file opens automatically with clipboard content as initial content
+- `MyScratchPad: Create New Scratch File` — Create a global scratch file
+- `MyScratchPad: Create New Workspace Scratch File` — Create a workspace scratch file
+- `MyScratchPad: Create Scratch File from Selection` — Create file from selected text
+- `MyScratchPad: Create Scratch File from File` — Create from an existing file in Explorer
+- `MyScratchPad: Clean Up Old Files` — (advanced) remove legacy storage files if present
+- `MyScratchPad: Migrate Old Scratch Files to Unified Storage` — (advanced) migrate legacy storage files to the unified storage (For users who have used the extension before the migration)
 
-2. **From Selected Text**:
-   - Select any text or code in VS Code
-   - Right-click and choose "Create workspace/global scratchpad"
-   - Creates a scratchpad with the selected content
-
-3. **From File Explorer**:
-   - Right-click on any file in the Explorer
-   - Choose "Create scratchpad from file"
-   - Creates a new scratchpad with smart naming (e.g., `hello.txt` → `hello_scratch.txt`)
-
-
-### 🔧 Managing Files
-
-- **Open**: Click any file to open it in the editor
-- **Rename**: Right-click → Rename, or hover and click the edit icon
-- **Delete**: Right-click → Delete, or hover and click the trash icon
-- **Refresh**: Click the refresh icon to update the file listing
-
-### 🎯 Smart File Handling
-
-The extension now provides streamlined file creation:
-
-- **Simple naming**: Just enter the filename with extension (e.g., `script.py`, `notes.md`)
-- **Clipboard integration**: New files automatically start with your clipboard content
-- **Smart naming**: Files created from existing files get intelligent naming
-- **Cross-editor sync**: Files sync seamlessly between VS Code, Cursor, and Windsurf
+---
 
 ## Supported File Types
 
-### 🌟 Universal File Support
+MyScratchPad treats files almost universally — any extension is supported. Common examples include:
 
-MyScratchPad supports any file extension you need:
+- Programming languages: `.js`, `.ts`, `.py`, `.go`, `.java`, `.rb`, `.cpp`, `.cs` etc.
+- Web: `.html`, `.css`, `.jsx`, `.tsx`, `.vue`
+- Data & config: `.json`, `.yaml`, `.env`, `.toml`
+- Docs and plain text: `.md`, `.txt`
 
-- **Programming Languages**: `.js`, `.ts`, `.py`, `.go`, `.java`, `.rb`, `.cpp`, `.cs`, `.php`, `.swift`, `.kt`, `.rs`, `.dart`, `.lua`
-- **Web Technologies**: `.html`, `.css`, `.scss`, `.jsx`, `.tsx`, `.vue`, `.svelte`
-- **Data & Config**: `.json`, `.yaml`, `.toml`, `.xml`, `.ini`, `.cfg`, `.env`
-- **Documentation**: `.md`, `.txt`, `.rst`, `.adoc`
-- **Scripts**: `.sh`, `.ps1`, `.bat`, `.cmd`
-- **Database**: `.sql`, `.nosql`
-- **And any other extension you need!**
-
-Files automatically start with your clipboard content and get appropriate icons based on their extension.
-
-## 💡 Use Cases
-
-### Global Scratchpad Perfect For:
-
-- Code snippets and templates you reuse across projects
-- Personal notes and reminders
-- Learning experiments and practice code
-- Documentation drafts
-- Configuration examples
-- Content from your clipboard for quick access
-
-### Workspace Scratchpad Perfect For:
-
-- Project-specific temporary files
-- Quick prototypes and experiments  
-- Meeting notes for the current project
-- Temporary data files and mock content
-- Project-specific snippets
-- Files derived from current project files
-
-## 🔄 Cross-Editor Compatibility
-
-**MyScratchPad works seamlessly across multiple editors!**
-
-- **VS Code**: Full native support
-- **Cursor**: Complete compatibility - all files sync automatically
-- **Windsurf**: Perfect integration - create files in one, access in all
-
-### How It Works
-
-MyScratchPad uses a shared storage system that all three editors can access. This means:
-
-- Files created in VS Code appear instantly in Cursor and Windsurf
-- Work on a file in Cursor, continue editing in VS Code
-- Perfect for teams using different editors
-- No manual file transfers or exports needed
-
-## Requirements
-
-- Visual Studio Code 1.95.0 or higher (also works with Cursor and Windsurf)
-- No additional dependencies required
-
-## Extension Settings
-
-This extension does not contribute any VS Code settings. All configuration is handled through the intuitive UI.
-
-## Known Issues
-
-None at this time. If you encounter any issues, please [report them on GitHub](https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/issues).
-
-## Release Notes
-
-### Latest Release
-
-🚀 **Major Workflow Enhancement Update**:
-
-- **⚡ Simplified Creation**: Single-step file creation - just enter name with extension
-- **📋 Clipboard Integration**: New files automatically start with clipboard content
-- **🎯 Context Menu Creation**: Create scratchpads from selected text or existing files
-- **🧠 Smart Naming**: Intelligent file naming when creating from existing files
-
-- **🔄 Cross-Editor Persistence**: Full compatibility between VS Code, Cursor, and Windsurf
-- **🌟 Universal File Support**: Support for any file extension with appropriate icons
-- **💼 Dual Scratchpad System**: Global and workspace-specific file management
+Files open with sensible templates for common extensions while allowing full flexibility for any custom extension.
 
 ---
 
-## 🚀 Getting Started
+## Troubleshooting
 
-1. **Install** the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=jccoder.myscratchpad).
-2. **Check the [releases folder](/releases)** for all versions of the extension.
-3. **Reload** VS Code if prompted
-4. **Open** the Explorer sidebar (Ctrl/Cmd + Shift + E)
-5. **Find** the "Scratchpad" and "Workspace Scratchpad" views
-6. **Click** the "+" icon to create your first scratch file!
+- If new files fail to create, confirm the extension has filesystem access for your environment.
+- If files disappear from the UI, hit Refresh in the view or restart VS Code. The files are plain files on disk and can be opened from the file system.
+- Report bugs or request features at: `https://github.com/IDAN-DEVS/myscratchpad-vscode-extension/issues`
 
-## 🛠️ Development
+---
 
-### Building the Extension
+## Developer Notes
+
+- Core services live in `src/services/` and UI providers in `src/views/`.
+- Providers accept storage paths computed at activation time (`extension.ts`) so concerns are separated.
+
+Build & dev:
 
 ```bash
-# Clone the repository
-git clone https://github.com/IDAN-DEVS/myscratchpad-vscode-extension
-
-# Install dependencies
 npm install
-
-# Compile in watch mode
-npm run watch
-
-# Launch extension in new VS Code window
-# Press F5 in VS Code
+npm run watch   # dev
+npm run compile # build
 ```
-
-### Contributing
-
-We welcome contributions! Please feel free to submit issues and pull requests on [GitHub](https://github.com/IDAN-DEVS/myscratchpad-vscode-extension).
 
 ---
 
-**Enjoy using MyScratchPad! 🎉**
+## Contributing
 
-_Make your VS Code workflow more efficient with organized, persistent scratch files._
+Contributions are welcome. Please open issues and PRs on GitHub and follow project conventions.
+
+---
