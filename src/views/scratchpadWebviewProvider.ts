@@ -12,6 +12,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
   private _workspaceService: ScratchpadService;
   private _globalDir: string;
   private _workspaceDir: string;
+  private _isDisposed = false;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
@@ -167,22 +168,9 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    // Also listen for document save events to ensure UI updates
-    const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
-      const filePath = document.uri.fsPath;
-      // Check if the saved file is in one of our scratchpad directories
-      if (
-        filePath.includes(this._globalDir) ||
-        filePath.includes(this._workspaceDir)
-      ) {
-        // Small delay to ensure file system has updated
-        setTimeout(() => this.refresh(), 50);
-      }
-    });
-
     // Store the disposable for cleanup when webview is disposed
     webviewView.onDidDispose(() => {
-      disposable.dispose();
+      this._isDisposed = true;
     });
   }
 
@@ -239,7 +227,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   public refresh(): void {
-    if (this._view) {
+    if (this._view && !this._isDisposed) {
       const { globalFiles, workspaceFiles } = this._getAllFiles();
       this._view.webview.postMessage({
         type: "refresh",

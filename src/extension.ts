@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
         new vscode.RelativePattern(workspaceScratchpadDir, "**/*")
       );
 
-      // Refresh on file changes with a small debounce to prevent excessive refreshes
+      // Refresh on file changes with a debounce to prevent excessive refreshes
       let refreshTimeout: NodeJS.Timeout | undefined;
       const refreshHandler = () => {
         if (refreshTimeout) {
@@ -88,36 +88,17 @@ export function activate(context: vscode.ExtensionContext) {
         }
         refreshTimeout = setTimeout(() => {
           webviewProvider.refresh();
-        }, 100);
+        }, 300);
       };
 
-      globalWatcher.onDidChange(refreshHandler);
+      // Only refresh on file creation and deletion, not on file changes (to preserve focus during editing)
       globalWatcher.onDidCreate(refreshHandler);
       globalWatcher.onDidDelete(refreshHandler);
 
-      workspaceWatcher.onDidChange(refreshHandler);
       workspaceWatcher.onDidCreate(refreshHandler);
       workspaceWatcher.onDidDelete(refreshHandler);
 
-      // Also listen to document save events to catch file saves that might not trigger file system events immediately
-      const documentSaveHandler = vscode.workspace.onDidSaveTextDocument(
-        (document) => {
-          const filePath = document.uri.fsPath;
-          // Check if the saved file is in one of our scratchpad directories
-          if (
-            filePath.includes(storagePaths.globalScratchFiles) ||
-            filePath.includes(workspaceScratchpadDir)
-          ) {
-            refreshHandler();
-          }
-        }
-      );
-
-      context.subscriptions.push(
-        globalWatcher,
-        workspaceWatcher,
-        documentSaveHandler
-      );
+      context.subscriptions.push(globalWatcher, workspaceWatcher);
     } catch (error) {
       console.error("Error setting up file watchers:", error);
     }
