@@ -12,6 +12,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
   private _workspaceService: ScratchpadService;
   private _globalDir: string;
   private _workspaceDir: string;
+  private _isDisposed = false;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
@@ -167,22 +168,9 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    // Also listen for document save events to ensure UI updates
-    const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
-      const filePath = document.uri.fsPath;
-      // Check if the saved file is in one of our scratchpad directories
-      if (
-        filePath.includes(this._globalDir) ||
-        filePath.includes(this._workspaceDir)
-      ) {
-        // Small delay to ensure file system has updated
-        setTimeout(() => this.refresh(), 50);
-      }
-    });
-
     // Store the disposable for cleanup when webview is disposed
     webviewView.onDidDispose(() => {
-      disposable.dispose();
+      this._isDisposed = true;
     });
   }
 
@@ -239,7 +227,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   public refresh(): void {
-    if (this._view) {
+    if (this._view && !this._isDisposed) {
       const { globalFiles, workspaceFiles } = this._getAllFiles();
       this._view.webview.postMessage({
         type: "refresh",
@@ -416,6 +404,22 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyScratchPad</title>
     <style>
+        :root {
+            --sidebar-spacing: 12px;
+            --section-spacing: 16px;
+            --item-spacing: 4px;
+            --border-radius: 4px;
+            --border-radius-sm: 2px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.2s ease;
+            --transition-slow: 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             padding: 0;
             margin: 0;
@@ -423,219 +427,490 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
             font-size: var(--vscode-font-size);
             color: var(--vscode-foreground);
             background-color: var(--vscode-sideBar-background);
+            line-height: 1.4;
+            overflow-x: hidden;
         }
-        
+
         .container {
-            padding: 10px;
+            padding: var(--sidebar-spacing);
+            padding-top: 8px;
+            min-height: 100vh;
         }
-        
+
+        /* Header Section */
         .header {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            margin-bottom: var(--sidebar-spacing);
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--vscode-sideBar-border);
+            position: sticky;
+            top: 0;
+            background: var(--vscode-sideBar-background);
+            z-index: 10;
+            backdrop-filter: blur(4px);
         }
-        
+
         .header h2 {
             margin: 0;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             flex: 1;
+            color: var(--vscode-foreground);
+            letter-spacing: -0.02em;
         }
-        
+
         .header-actions {
             display: flex;
             gap: 4px;
         }
-        
+
         .action-button {
             background: transparent;
             color: var(--vscode-foreground);
-            border: none;
-            border-radius: 2px;
-            padding: 6px 10px;
+            border: 1px solid var(--vscode-button-border, transparent);
+            border-radius: var(--border-radius-sm);
+            padding: 6px 12px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-family: inherit;
-            font-weight: bold;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left var(--transition-normal);
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
         .action-button:hover {
             background: var(--vscode-toolbar-hoverBackground);
+            border-color: var(--vscode-focusBorder);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
-        
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        /* Search Section */
         .search-container {
-            margin-bottom: 12px;
+            margin-bottom: var(--sidebar-spacing);
+            position: relative;
         }
-        
+
+        .search-wrapper {
+            position: relative;
+        }
+
         .search-input {
             width: 100%;
-            padding: 6px 8px;
+            padding: 8px 12px 8px 36px;
             background: var(--vscode-input-background);
             color: var(--vscode-input-foreground);
             border: 1px solid var(--vscode-input-border);
-            border-radius: 2px;
+            border-radius: var(--border-radius);
             font-family: inherit;
-            font-size: 12px;
+            font-size: 13px;
             outline: none;
+            transition: all var(--transition-fast);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-        
+
         .search-input:focus {
             border-color: var(--vscode-focusBorder);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
         }
-        
+
+        .search-input::placeholder {
+            color: var(--vscode-input-placeholderForeground);
+            opacity: 0.7;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--vscode-input-placeholderForeground);
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .search-input:focus + .search-icon {
+            opacity: 1;
+            color: var(--vscode-focusBorder);
+        }
+
+        /* Section Styles */
         .section {
-            margin-bottom: 16px;
+            margin-bottom: var(--section-spacing);
+            background: var(--vscode-sideBar-background);
+            border-radius: var(--border-radius);
+            border: 1px solid transparent;
+            transition: all var(--transition-fast);
         }
-        
+
+        .section:hover {
+            border-color: var(--vscode-list-hoverBackground);
+        }
+
         .section-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 6px;
-            padding: 4px 0;
+            margin-bottom: 0;
+            padding: 10px 12px;
             cursor: pointer;
             user-select: none;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-fast);
         }
-        
+
         .section-header:hover {
             background: var(--vscode-list-hoverBackground);
-            border-radius: 2px;
         }
-        
+
+        .section-header:active {
+            background: var(--vscode-list-activeSelectionBackground);
+        }
+
         .section-toggle {
             font-size: 12px;
-            margin-right: 6px;
-            transition: transform 0.1s;
+            margin-right: 8px;
+            transition: transform var(--transition-normal);
+            color: var(--vscode-descriptionForeground);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
         }
-        
+
         .section-toggle.collapsed {
             transform: rotate(-90deg);
         }
-        
+
         .section-content {
-            transition: all 0.2s ease;
+            transition: all var(--transition-normal);
             overflow: hidden;
+            background: var(--vscode-sideBar-background);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
         }
-        
+
         .section-content.collapsed {
             max-height: 0;
             opacity: 0;
+            transform: scaleY(0);
+            transform-origin: top;
         }
-        
+
         .section-content.expanded {
-            max-height: 1000px;
+            max-height: 2000px;
             opacity: 1;
+            transform: scaleY(1);
         }
-        
+
         .section-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--vscode-foreground);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            flex: 1;
         }
-        
+
         .section-count {
-            font-size: 10px;
-            color: var(--vscode-descriptionForeground);
+            font-size: 11px;
+            font-weight: 500;
             background: var(--vscode-badge-background);
             color: var(--vscode-badge-foreground);
-            padding: 1px 6px;
-            border-radius: 8px;
-            min-width: 16px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            min-width: 20px;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: all var(--transition-fast);
         }
-        
+
+        .section-count.empty {
+            background: var(--vscode-descriptionForeground);
+            opacity: 0.5;
+        }
+
+        /* File List Styles */
         .file-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        
+
         .file-item {
             display: flex;
             align-items: center;
-            padding: 4px 8px;
-            border-radius: 2px;
+            padding: 8px 12px;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
-            transition: background-color 0.1s;
+            transition: all var(--transition-fast);
             position: relative;
-            margin-bottom: 1px;
+            margin: 2px 4px;
+            border: 1px solid transparent;
         }
-        
+
         .file-item:hover {
             background: var(--vscode-list-hoverBackground);
+            border-color: var(--vscode-list-hoverBackground);
+            transform: translateX(2px);
+            box-shadow: var(--shadow-sm);
         }
-        
+
+        .file-item:active {
+            background: var(--vscode-list-activeSelectionBackground);
+            transform: translateX(1px);
+        }
+
+        .file-item:focus {
+            outline: 2px solid var(--vscode-focusBorder);
+            outline-offset: -2px;
+        }
+
         .file-icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-fast);
         }
-        
+
+        .file-item:hover .file-icon {
+            transform: scale(1.1);
+        }
+
         .file-info {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
-        
+
         .file-name {
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 500;
             color: var(--vscode-foreground);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: 1.3;
+            transition: color var(--transition-fast);
         }
-        
+
+        .file-item:hover .file-name {
+            color: var(--vscode-textLink-foreground);
+        }
+
         .file-meta {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--vscode-descriptionForeground);
-            margin-top: 1px;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
+        .file-meta::before {
+            content: '📅';
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
         .file-actions {
             display: none;
-            gap: 2px;
+            gap: 4px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all var(--transition-fast);
         }
-        
+
         .file-item:hover .file-actions {
             display: flex;
+            opacity: 1;
+            transform: translateX(0);
         }
-        
+
         .file-action {
             background: none;
             border: none;
             color: var(--vscode-foreground);
             cursor: pointer;
-            padding: 2px;
-            border-radius: 2px;
-            font-size: 11px;
-            width: 16px;
-            height: 16px;
+            padding: 4px;
+            border-radius: var(--border-radius-sm);
+            font-size: 12px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all var(--transition-fast);
+            position: relative;
         }
-        
+
         .file-action:hover {
             background: var(--vscode-toolbar-hoverBackground);
+            transform: scale(1.1);
         }
-        
+
+        .file-action:active {
+            transform: scale(0.95);
+        }
+
+        .file-action.danger:hover {
+            background: rgba(255, 59, 59, 0.1);
+            color: #ff3b3b;
+        }
+
+        /* Empty and Loading States */
         .empty-state {
             text-align: center;
             color: var(--vscode-descriptionForeground);
-            font-size: 11px;
-            padding: 20px;
+            font-size: 12px;
+            padding: 32px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
         }
-        
+
+        .empty-state-icon {
+            font-size: 24px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            line-height: 1.4;
+        }
+
+        .empty-state-hint {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
         .loading {
             text-align: center;
             color: var(--vscode-descriptionForeground);
-            font-size: 11px;
-            padding: 10px;
+            font-size: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--vscode-progressBar-background);
+            border-top: 2px solid var(--vscode-progressBar-foreground);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .file-item {
+            animation: slideIn 0.2s ease-out;
+        }
+
+        .section {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 300px) {
+            .container {
+                padding: 8px;
+            }
+
+            .file-item {
+                padding: 6px 8px;
+            }
+
+            .file-meta {
+                font-size: 10px;
+            }
+        }
+
+        /* Focus and accessibility */
+        .action-button:focus,
+        .search-input:focus,
+        .file-item:focus,
+        .section-header:focus {
+            outline: 2px solid var(--vscode-focusBorder);
+            outline-offset: 1px;
+        }
+
+        /* Dark mode optimizations */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .file-item:hover {
+                border-color: var(--vscode-focusBorder);
+            }
+
+            .section:hover {
+                border-color: var(--vscode-focusBorder);
+            }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
@@ -644,46 +919,61 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
         <div class="header">
             <h2>MyScratchPad</h2>
             <div class="header-actions">
-                <button class="action-button" onclick="refresh()" title="Refresh">🔄</button>
+                <button class="action-button" onclick="refresh()" title="Refresh all scratch files" aria-label="Refresh">
+                    <span>🔄</span>
+                </button>
             </div>
         </div>
-        
+
         <div class="search-container">
-            <input type="text" class="search-input" placeholder="Search scratch files..." oninput="handleSearch(this.value)">
-        </div>
-        
-        <div class="section">
-            <div class="section-header" onclick="toggleSection('global')">
-                <div style="display: flex; align-items: center;">
-                    <span class="section-toggle collapsed" id="global-toggle">▶</span>
-                    <span class="section-title">All Scratchpads</span>
-                </div>
-                <span class="section-count" id="global-count">0</span>
+            <div class="search-wrapper">
+                <input type="text" class="search-input" placeholder="Search scratch files..." oninput="handleSearch(this.value)" aria-label="Search files">
+                <span class="search-icon">🔍</span>
             </div>
-            <div class="section-content collapsed" id="global-content">
-                <div style="margin-bottom: 8px;">
-                    <button class="action-button" onclick="createGlobalScratch()" title="Create New Global Scratch File">+ Global</button>
+        </div>
+
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('global')" role="button" tabindex="0" aria-expanded="false" aria-controls="global-content">
+                <div style="display: flex; align-items: center;">
+                    <span class="section-toggle collapsed" id="global-toggle" aria-hidden="true">▶</span>
+                    <span class="section-title">Global Scratchpads</span>
                 </div>
-                <ul class="file-list" id="global-files">
-                    <li class="loading">Loading...</li>
+                <span class="section-count empty" id="global-count" aria-label="Global files count">0</span>
+            </div>
+            <div class="section-content collapsed" id="global-content" role="region" aria-labelledby="global-toggle">
+                <div style="padding: 12px;">
+                    <button class="action-button" onclick="createGlobalScratch()" title="Create New Global Scratch File" aria-label="Create new global scratch file">
+                        <span>➕</span> New Global File
+                    </button>
+                </div>
+                <ul class="file-list" id="global-files" role="list" aria-label="Global scratch files">
+                    <li class="loading" role="status" aria-live="polite">
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <span>Loading global files...</span>
+                    </li>
                 </ul>
             </div>
         </div>
-        
+
         <div class="section">
-            <div class="section-header" onclick="toggleSection('workspace')">
+            <div class="section-header" onclick="toggleSection('workspace')" role="button" tabindex="0" aria-expanded="false" aria-controls="workspace-content">
                 <div style="display: flex; align-items: center;">
-                    <span class="section-toggle collapsed" id="workspace-toggle">▶</span>
+                    <span class="section-toggle collapsed" id="workspace-toggle" aria-hidden="true">▶</span>
                     <span class="section-title">Workspace Scratchpads</span>
                 </div>
-                <span class="section-count" id="workspace-count">0</span>
+                <span class="section-count empty" id="workspace-count" aria-label="Workspace files count">0</span>
             </div>
-            <div class="section-content collapsed" id="workspace-content">
-                <div style="margin-bottom: 8px;">
-                    <button class="action-button" onclick="createWorkspaceScratch()" title="Create New Workspace Scratch File">+ Workspace</button>
+            <div class="section-content collapsed" id="workspace-content" role="region" aria-labelledby="workspace-toggle">
+                <div style="padding: 12px;">
+                    <button class="action-button" onclick="createWorkspaceScratch()" title="Create New Workspace Scratch File" aria-label="Create new workspace scratch file">
+                        <span>➕</span> New Workspace File
+                    </button>
                 </div>
-                <ul class="file-list" id="workspace-files">
-                    <li class="loading">Loading...</li>
+                <ul class="file-list" id="workspace-files" role="list" aria-label="Workspace scratch files">
+                    <li class="loading" role="status" aria-live="polite">
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <span>Loading workspace files...</span>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -691,47 +981,83 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
     <script>
         const vscode = acquireVsCodeApi();
-        
+
         // State for section collapse/expand
         let sectionStates = {
             global: false,  // Start collapsed
             workspace: false  // Start collapsed
         };
-        
+
+        // Focus management
+        let lastFocusedElement = null;
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const focused = document.activeElement;
+                if (focused && focused.classList.contains('section-header')) {
+                    e.preventDefault();
+                    toggleSection(focused.getAttribute('data-section'));
+                }
+            }
+        });
+
+        // Save focus before operations
+        function saveFocus() {
+            lastFocusedElement = document.activeElement;
+        }
+
+        // Restore focus after operations
+        function restoreFocus() {
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+            }
+        }
+
         function createGlobalScratch() {
+            saveFocus();
             vscode.postMessage({ type: 'createGlobalScratch' });
         }
-        
+
         function createWorkspaceScratch() {
+            saveFocus();
             vscode.postMessage({ type: 'createWorkspaceScratch' });
         }
-        
+
         function openFile(path) {
+            saveFocus();
             vscode.postMessage({ type: 'openFile', path: path });
         }
-        
+
         function deleteFile(file) {
+            saveFocus();
             vscode.postMessage({ type: 'deleteFile', file });
         }
-        
+
         function renameFile(file) {
+            saveFocus();
             vscode.postMessage({ type: 'renameFile', file });
         }
-        
+
         function refresh() {
+            saveFocus();
             vscode.postMessage({ type: 'refresh' });
         }
-        
+
         function handleSearch(query) {
             vscode.postMessage({ type: 'search', query });
         }
-        
+
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId + '-content');
             const toggle = document.getElementById(sectionId + '-toggle');
-            
+            const header = content.previousElementSibling;
+
             sectionStates[sectionId] = !sectionStates[sectionId];
-            
+
+            // Update ARIA attributes
+            header.setAttribute('aria-expanded', sectionStates[sectionId]);
+
             if (sectionStates[sectionId]) {
                 content.classList.remove('collapsed');
                 content.classList.add('expanded');
@@ -744,57 +1070,150 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
                 toggle.textContent = '▶';
             }
         }
-        
+
         function formatDate(timestamp) {
-            return new Date(timestamp).toLocaleDateString() + ' ' + 
-                   new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else if (diffDays <= 7) {
+                return date.toLocaleDateString([], {weekday: 'short'}) + ' ' +
+                       date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else {
+                return date.toLocaleDateString() + ' ' +
+                       date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
         }
-        
+
         function getFileIcon(extension) {
             const icons = {
-                'js': '📄',
-                'ts': '📘',
-                'html': '🌐',
-                'css': '🎨',
-                'json': '📋',
-                'md': '📝',
-                'txt': '📄',
-                'py': '🐍',
+                // Programming Languages
+                'js': '🟨', 'javascript': '🟨',
+                'ts': '🔷', 'typescript': '🔷',
+                'py': '🐍', 'python': '🐍',
                 'java': '☕',
-                'cpp': '⚙️',
+                'cpp': '⚙️', 'cxx': '⚙️', 'cc': '⚙️', 'c++': '⚙️',
                 'c': '⚙️',
-                'go': '🐹',
-                'rs': '🦀',
-                'php': '🐘',
-                'rb': '💎',
+                'cs': '💎', 'csharp': '💎',
+                'go': '🐹', 'golang': '🐹',
+                'rs': '🦀', 'rust': '🦀',
                 'swift': '🦉',
-                'kt': '🎯',
+                'kt': '🎯', 'kotlin': '🎯',
                 'dart': '🎯',
+                'scala': '⚡',
+                'php': '🐘',
+                'rb': '💎', 'ruby': '💎',
+                'lua': '🌙',
+                'r': '📊',
+                'sh': '⚡', 'bash': '⚡',
+                'ps1': '⚡', 'powershell': '⚡',
+
+                // Web Technologies
+                'html': '🌐', 'htm': '🌐',
+                'css': '🎨', 'scss': '🎨', 'sass': '🎨', 'less': '🎨',
+                'jsx': '⚛️', 'tsx': '⚛️',
                 'vue': '💚',
-                'jsx': '⚛️',
-                'tsx': '⚛️'
+                'svelte': '🧡',
+                'astro': '🚀',
+
+                // Data & Config
+                'json': '📋',
+                'xml': '📄',
+                'yaml': '📄', 'yml': '📄',
+                'toml': '📄',
+                'ini': '📄', 'cfg': '📄', 'conf': '📄',
+                'env': '🔐',
+                'md': '📝', 'markdown': '📝',
+                'txt': '📄',
+                'log': '📜',
+                'sql': '🗄️',
+
+                // Documents
+                'pdf': '📕',
+                'doc': '📄', 'docx': '📄',
+                'xls': '📊', 'xlsx': '📊',
+                'ppt': '📊', 'pptx': '📊',
+
+                // Images & Media
+                'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️',
+                'svg': '🖼️', 'webp': '🖼️',
+                'mp4': '🎬', 'avi': '🎬', 'mov': '🎬',
+                'mp3': '🎵', 'wav': '🎵',
+
+                // Archives
+                'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦', 'gz': '📦',
+
+                // Special files
+                'gitignore': '🚫',
+                'readme': '📖', 'license': '📋',
+                'dockerfile': '🐳',
+                'makefile': '⚙️'
             };
-            return icons[extension] || '📄';
+
+            const normalizedExt = extension.toLowerCase();
+            return icons[normalizedExt] || '📄';
         }
         
         function renderFileList(files, containerId) {
             const container = document.getElementById(containerId);
             const countElement = document.getElementById(containerId.replace('-files', '-count'));
 
-            countElement.textContent = files.length;
+            // Update count with animation
+            const currentCount = parseInt(countElement.textContent) || 0;
+            const newCount = files.length;
+
+            countElement.textContent = newCount;
+            countElement.classList.toggle('empty', newCount === 0);
 
             // Clear container
             container.innerHTML = '';
 
             if (files.length === 0) {
-                container.innerHTML = '<li class="empty-state">No files found</li>';
+                const emptyState = document.createElement('li');
+                emptyState.className = 'empty-state';
+
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'empty-state-icon';
+                iconDiv.textContent = '📝';
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'empty-state-text';
+                textDiv.textContent = 'No files found';
+
+                const hintDiv = document.createElement('div');
+                hintDiv.className = 'empty-state-hint';
+                hintDiv.textContent = 'Create your first scratch file to get started!';
+
+                emptyState.appendChild(iconDiv);
+                emptyState.appendChild(textDiv);
+                emptyState.appendChild(hintDiv);
+
+                container.appendChild(emptyState);
                 return;
             }
 
-            // Build DOM nodes to avoid string-escaping issues on Windows paths
-            files.forEach((file) => {
+            // Sort files by modification date (newest first)
+            const sortedFiles = [...files].sort((a, b) => b.lastModified - a.lastModified);
+
+            // Build DOM nodes with improved accessibility
+            sortedFiles.forEach((file, index) => {
                 const li = document.createElement('li');
                 li.className = 'file-item';
+                li.role = 'listitem';
+                li.tabIndex = 0;
+                li.setAttribute('aria-label', 'File: ' + file.name + ', extension: ' + file.extension + ', modified: ' + formatDate(file.lastModified));
+                li.setAttribute('data-file-index', index);
+
+                // Keyboard navigation
+                li.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openFile(file.path);
+                    }
+                });
 
                 li.addEventListener('click', () => {
                     openFile(file.path);
@@ -803,6 +1222,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
                 const iconSpan = document.createElement('span');
                 iconSpan.className = 'file-icon';
                 iconSpan.textContent = getFileIcon(file.extension);
+                iconSpan.setAttribute('aria-hidden', 'true');
 
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'file-info';
@@ -814,7 +1234,7 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
                 const metaDiv = document.createElement('div');
                 metaDiv.className = 'file-meta';
-                metaDiv.textContent = 'Modified: ' + formatDate(file.lastModified);
+                metaDiv.textContent = formatDate(file.lastModified);
 
                 infoDiv.appendChild(nameDiv);
                 infoDiv.appendChild(metaDiv);
@@ -824,17 +1244,19 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
 
                 const renameBtn = document.createElement('button');
                 renameBtn.className = 'file-action';
-                renameBtn.title = 'Rename';
-                renameBtn.textContent = '✏️';
+                renameBtn.title = 'Rename file';
+                renameBtn.setAttribute('aria-label', 'Rename ' + file.name);
+                renameBtn.innerHTML = '✏️';
                 renameBtn.addEventListener('click', (ev) => {
                     ev.stopPropagation();
                     renameFile(file);
                 });
 
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'file-action';
-                deleteBtn.title = 'Delete';
-                deleteBtn.textContent = '🗑️';
+                deleteBtn.className = 'file-action danger';
+                deleteBtn.title = 'Delete file';
+                deleteBtn.setAttribute('aria-label', 'Delete ' + file.name);
+                deleteBtn.innerHTML = '🗑️';
                 deleteBtn.addEventListener('click', (ev) => {
                     ev.stopPropagation();
                     deleteFile(file);
@@ -854,31 +1276,76 @@ export class ScratchpadWebviewProvider implements vscode.WebviewViewProvider {
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
-            
+
             switch (message.type) {
                 case 'refresh':
                     renderFileList(message.globalFiles, 'global-files');
                     renderFileList(message.workspaceFiles, 'workspace-files');
+                    restoreFocus();
                     break;
                 case 'searchResults':
                     renderFileList(message.globalFiles, 'global-files');
                     renderFileList(message.workspaceFiles, 'workspace-files');
                     break;
+                case 'openResult':
+                    if (message.success) {
+                        restoreFocus();
+                    }
+                    break;
             }
         });
-        
+
+        // Initialize section headers with data attributes
+        function initializeSections() {
+            const globalHeader = document.querySelector('.section-header[onclick*="global"]');
+            const workspaceHeader = document.querySelector('.section-header[onclick*="workspace"]');
+
+            if (globalHeader) globalHeader.setAttribute('data-section', 'global');
+            if (workspaceHeader) workspaceHeader.setAttribute('data-section', 'workspace');
+        }
+
         // Send ready message when page is fully loaded
         window.addEventListener('DOMContentLoaded', () => {
+            initializeSections();
             vscode.postMessage({ type: 'ready' });
         });
-        
+
         // Fallback in case DOMContentLoaded already fired
         if (document.readyState === 'loading') {
             // Still loading, wait for DOMContentLoaded
         } else {
             // Already loaded
+            initializeSections();
             vscode.postMessage({ type: 'ready' });
         }
+
+        // Add keyboard navigation for sections
+        document.addEventListener('keydown', function(e) {
+            if (e.target.closest('.section-header')) {
+                const header = e.target.closest('.section-header');
+                const sectionId = header.getAttribute('data-section');
+
+                if ((e.key === 'Enter' || e.key === ' ') && sectionId) {
+                    e.preventDefault();
+                    toggleSection(sectionId);
+                }
+            }
+        });
+
+        // Auto-focus search input when typing starts (if no input is focused)
+        document.addEventListener('keydown', function(e) {
+            const searchInput = document.querySelector('.search-input');
+            const activeElement = document.activeElement;
+
+            // If typing letters/numbers and not in an input/textarea/button
+            if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key) &&
+                !['INPUT', 'TEXTAREA', 'BUTTON'].includes(activeElement.tagName) &&
+                activeElement !== searchInput) {
+                searchInput.focus();
+                searchInput.value = e.key;
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>`;

@@ -2,7 +2,7 @@
   "name": "myscratchpad",
   "displayName": "MyScratchPad",
   "description": "A simple scratchpad that lives in your IDE",
-  "version": "0.0.21",
+  "version": "0.0.24",
   "publisher": "jccoder",
   "author": {
     "name": "JC Coder"
@@ -108,6 +108,16 @@
         "command": "myscratchpad.createWorkspaceScratchFileFromFile",
         "title": "Create Workspace Scratch File from File",
         "icon": "$(new-file)"
+      },
+      {
+        "command": "myscratchpad.migrateStorage",
+        "title": "Migrate Old Scratch Files to Unified Storage",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "myscratchpad.cleanupOldFiles",
+        "title": "Clean Up Scratch Files in Old Storage",
+        "icon": "$(trash)"
       }
     ],
     "menus": {

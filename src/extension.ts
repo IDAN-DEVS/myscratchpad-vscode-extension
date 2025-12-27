@@ -6,39 +6,39 @@ import { ScratchpadProvider } from "./models/scratchpadProvider";
 import { ScratchpadService } from "./services/scratchpadService";
 import { IScratchFile } from "./models/scratchFile";
 import { ScratchpadWebviewProvider } from "./views/scratchpadWebviewProvider";
+import { StorageHelper } from "./services/storageHelpers";
+import { MigrationService } from "./services/migrationService";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "MyScratchPad" is now active!');
 
-  // Create the global scratchpad directory
-  const globalScratchpadDir = path.join(
-    context.globalStorageUri.fsPath,
-    "scratchFiles"
-  );
+  // Initialize migration check first
+  MigrationService.initializeMigrationCheck(context);
+
+  // Get unified storage paths
+  const storagePaths = StorageHelper.getUnifiedStoragePaths();
 
   // Get workspace folder name for unique directory naming
-  let workspaceFolderPath = vscode.workspace.workspaceFolders
+  const workspaceFolderPath = vscode.workspace.workspaceFolders
     ? path.basename(vscode.workspace.workspaceFolders[0].uri.fsPath)
     : "default";
 
-  // Create workspace-specific scratchpad directory
-  const workspaceScratchpadDir = vscode.workspace.workspaceFolders
-    ? path.join(
-        context.globalStorageUri.fsPath,
-        "workspaceScratchFiles",
-        workspaceFolderPath
-      )
-    : path.join(context.globalStorageUri.fsPath, "workspaceScratchFiles");
+  // Create workspace-specific scratchpad directory path
+  const workspaceScratchpadDir =
+    StorageHelper.getWorkspaceScratchFilesPath(workspaceFolderPath);
+
+  // Ensure all directories exist
+  StorageHelper.ensureDirectoriesExist();
 
   // Initialize providers and services for both views
   const globalScratchpadProvider = new ScratchpadProvider(
-    globalScratchpadDir,
+    storagePaths.globalScratchFiles,
     "global"
   );
   const globalScratchpadService = new ScratchpadService(
-    globalScratchpadDir,
+    storagePaths.globalScratchFiles,
     "global"
   );
 
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register webview provider instead of tree views
   const webviewProvider = new ScratchpadWebviewProvider(
     context.extensionUri,
-    globalScratchpadDir,
+    storagePaths.globalScratchFiles,
     workspaceScratchpadDir,
     globalScratchpadService,
     workspaceScratchpadService
@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
     try {
       // Watch global scratchpad directory
       const globalWatcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(globalScratchpadDir, "**/*")
+        new vscode.RelativePattern(storagePaths.globalScratchFiles, "**/*")
       );
 
       // Watch workspace scratchpad directory
@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
         new vscode.RelativePattern(workspaceScratchpadDir, "**/*")
       );
 
-      // Refresh on file changes with a small debounce to prevent excessive refreshes
+      // Refresh on file changes with a debounce to prevent excessive refreshes
       let refreshTimeout: NodeJS.Timeout | undefined;
       const refreshHandler = () => {
         if (refreshTimeout) {
@@ -88,36 +88,17 @@ export function activate(context: vscode.ExtensionContext) {
         }
         refreshTimeout = setTimeout(() => {
           webviewProvider.refresh();
-        }, 100);
+        }, 300);
       };
 
-      globalWatcher.onDidChange(refreshHandler);
+      // Only refresh on file creation and deletion, not on file changes (to preserve focus during editing)
       globalWatcher.onDidCreate(refreshHandler);
       globalWatcher.onDidDelete(refreshHandler);
 
-      workspaceWatcher.onDidChange(refreshHandler);
       workspaceWatcher.onDidCreate(refreshHandler);
       workspaceWatcher.onDidDelete(refreshHandler);
 
-      // Also listen to document save events to catch file saves that might not trigger file system events immediately
-      const documentSaveHandler = vscode.workspace.onDidSaveTextDocument(
-        (document) => {
-          const filePath = document.uri.fsPath;
-          // Check if the saved file is in one of our scratchpad directories
-          if (
-            filePath.includes(globalScratchpadDir) ||
-            filePath.includes(workspaceScratchpadDir)
-          ) {
-            refreshHandler();
-          }
-        }
-      );
-
-      context.subscriptions.push(
-        globalWatcher,
-        workspaceWatcher,
-        documentSaveHandler
-      );
+      context.subscriptions.push(globalWatcher, workspaceWatcher);
     } catch (error) {
       console.error("Error setting up file watchers:", error);
     }
@@ -125,6 +106,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Set up file watchers after a short delay to ensure directories exist
   setTimeout(setupFileWatchers, 1000);
+
+  // Register migration commands
+  MigrationService.registerCommands(context);
 
   // Register commands
   context.subscriptions.push(
